@@ -13,7 +13,7 @@ namespace MigrationTutorial
             Realm realm = RealmService.GetRealm();
             SeedData.Seed(realm);
 
-            var employees = realm.All<Employee>().ToList();
+            //var employees = realm.All<Employee>().ToList();
         }
     }
 }

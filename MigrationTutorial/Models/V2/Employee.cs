@@ -2,12 +2,12 @@
 using MongoDB.Bson;
 using Realms;
 
-namespace MigrationTutorial.Models
+namespace MigrationTutorial.Models.V2
 {
     public class Employee : RealmObject
     {
         [PrimaryKey]
-        public ObjectId Id { get; set; } = ObjectId.GenerateNewId();
+        public ObjectId Id { get; private set; } = ObjectId.GenerateNewId();
 
         [Required]
         public string Fullname { get; set; }
@@ -15,22 +15,23 @@ namespace MigrationTutorial.Models
         [Required]
         public int? Age { get; set; }
 
+        public Department Department { get; set; }
+
         public Gender Gender
         {
             get
             {
-                return (Gender)GenderId;
+                return (Gender)_Gender;
             }
             set
             {
-                GenderId = (int)value;
+                _Gender = (int)value;
             }
         }
 
-        public int GenderId { get; set; } = 0;
+        private int _Gender { get; set; } = 0;
 
         public Employee() { }
-
     }
 
     public enum Gender
