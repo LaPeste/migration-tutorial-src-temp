@@ -15,27 +15,8 @@ namespace MigrationTutorial.Models.V1
         [Required]
         public int? Age { get; set; }
 
-        public Gender Gender
-        {
-            get
-            {
-                return (Gender)GenderId;
-            }
-            set
-            {
-                GenderId = (int)value;
-            }
-        }
-
-        public int GenderId { get; set; } = 0;
-
+        public string Gender { get; set; }
+            
         public Employee() { }
-
-    }
-
-    public enum Gender
-    {
-        Male = 1,
-        Female
     }
 }

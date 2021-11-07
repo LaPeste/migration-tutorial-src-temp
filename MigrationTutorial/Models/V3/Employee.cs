@@ -2,7 +2,7 @@
 using MongoDB.Bson;
 using Realms;
 
-namespace MigrationTutorial.Models.V2
+namespace MigrationTutorial.Models.V3
 {
     public class Employee : RealmObject
     {

@@ -1,76 +1,92 @@
 ﻿using System;
 using System.Linq;
 using MigrationTutorial.Models.V1;
-using Realms;
+using MigrationTutorial.Services;
+using MigrationTutorial.Utils;
 
 namespace MigrationTutorial.Migrations
 {
     public static class V1Utils
     {
-        public static void SeedData(Realm realm)
+        public static void SeedData()
         {
-            // since employees must be always there, if none, then the realm is just created
-            if (realm.All<Employee>().ToList().Count == 0)
-            {
-                realm.Write(() =>
-                {
-                    realm.Add(new Employee[]{
-                        new Employee()
-                        {
-                            Fullname = "Mario Rossi",
-                            Age = 25,
-                            Gender = Gender.Male
-                        },
-                        new Employee()
-                        {
-                            Fullname = "Federica Bianchi",
-                            Age = 23,
-                            Gender = Gender.Female
-                        },
-                        new Employee()
-                        {
-                            Fullname = "Luigi Verdi",
-                            Age = 27,
-                            Gender = Gender.Male
-                        },
-                        new Employee()
-                        {
-                            Fullname = "Giovanni Viola",
-                            Age = 29,
-                            Gender = Gender.Male
-                        }
-                        });
+            var realm = RealmService.GetRealm();
 
-                    realm.Add(new Consumable[]
-                    {
-                        new Consumable()
-                        {
-                            Type = ConsumableType.Glue,
-                            UnitOfMeasure = "Liters"
-                        },
-                        new Consumable()
-                        {
-                            Type = ConsumableType.Brush,
-                            UnitOfMeasure = "Pieces"
-                        },
-                        new Consumable()
-                        {
-                            Type = ConsumableType.GlueHolder,
-                            UnitOfMeasure = "Pieces"
-                        },
-                        new Consumable()
-                        {
-                            Type = ConsumableType.SandPaper,
-                            UnitOfMeasure = "Strips"
-                        },
-                        new Consumable()
-                        {
-                            Type = ConsumableType.MaterialSheet,
-                            UnitOfMeasure = "Pieces"
-                        }
-                    });
-                });
+            // since employees must be always there, if none, then the realm is just created
+            if (realm.All<Employee>().Count() > 0)
+            {
+                Logger.LogWarning("The database was already seeded with V1");
+                return;
             }
+
+            realm.Write(() =>
+            {
+                realm.Add(new Employee[]{
+                    new Employee()
+                    {
+                        Fullname = "Mario Rossi",
+                        Age = 25,
+                        Gender = "Male"
+                    },
+                    new Employee()
+                    {
+                        Fullname = "Federica Bianchi",
+                        Age = 23,
+                        Gender = "Female"
+                    },
+                    new Employee()
+                    {
+                        Fullname = "Luigi Verdi",
+                        Age = 27,
+                        Gender = "Male"
+                    },
+                    new Employee()
+                    {
+                        Fullname = "Giovanni Viola",
+                        Age = 29,
+                        Gender = "Male"
+                    }
+                    });
+
+                realm.Add(new Consumable[]
+                {
+                    new Consumable()
+                    {
+                        Type = ConsumableType.Glue,
+                        UnitOfMeasure = "Liters",
+                        Price = 34,
+                        ProductId = "sldjh39"
+                    },
+                    new Consumable()
+                    {
+                        Type = ConsumableType.Brush,
+                        UnitOfMeasure = "Pieces",
+                        Price = 10,
+                        ProductId = "ms1qf"
+                    },
+                    new Consumable()
+                    {
+                        Type = ConsumableType.GlueHolder,
+                        UnitOfMeasure = "Pieces",
+                        Price = 39,
+                        ProductId = "385uyyt"
+                    },
+                    new Consumable()
+                    {
+                        Type = ConsumableType.SandPaper,
+                        UnitOfMeasure = "Strips",
+                        Price = 120.5f,
+                        ProductId = "210l4h"
+                    },
+                    new Consumable()
+                    {
+                        Type = ConsumableType.MaterialSheet,
+                        UnitOfMeasure = "Pieces",
+                        Price = 15,
+                        ProductId = "1ddkptl5"
+                    }
+                });
+            });
         }
     }
 }

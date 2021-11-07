@@ -2,19 +2,17 @@
 using MongoDB.Bson;
 using Realms;
 
-namespace MigrationTutorial.Models.V1
+namespace MigrationTutorial.Models.V3
 {
     public class Consumable : RealmObject
     {
         [PrimaryKey]
-        public ObjectId Id { get; private set; } = ObjectId.GenerateNewId();
-
-        public string ProductId { get; set; }
+        public string ProductId { get; private set; }
 
         public ConsumableType Type
         {
             get => Enum.Parse<ConsumableType>(_Type);
-            set=> _Type = value.ToString();
+            set => _Type = value.ToString();
         }
 
         [Required]
@@ -23,9 +21,13 @@ namespace MigrationTutorial.Models.V1
         public int Quantity { get; set; } = 0;
 
         [Required]
-        public string UnitOfMeasure {get; set;}
+        public string UnitOfMeasure { get; set; }
 
-        public float Price { get; set; }
+        public Supplier Supplier { get; set; }
+
+        public float LastPurchasedPrice { get; set; }
+
+        public string Brand { get; set; }
 
         private Consumable() { }
 
@@ -40,8 +42,6 @@ namespace MigrationTutorial.Models.V1
     {
         Glue = 1,
         SandPaper,
-        Brush,
-        GlueHolder,
         MaterialSheet
     }
 }

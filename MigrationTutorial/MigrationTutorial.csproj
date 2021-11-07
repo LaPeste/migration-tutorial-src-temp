@@ -5,6 +5,9 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
   <ItemGroup>
     <None Remove="Realm" />
     <None Remove="Models\" />
@@ -13,6 +16,7 @@
     <None Remove="Models\V1\" />
     <None Remove="Models\V2\" />
     <None Remove="New Folder\" />
+    <None Remove="Models\V3\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Realm" Version="10.6.0" />
@@ -24,5 +28,6 @@
     <Folder Include="Models\V1\" />
     <Folder Include="Models\V2\" />
     <Folder Include="Migrations\" />
+    <Folder Include="Models\V3\" />
   </ItemGroup>
 </Project>

@@ -2,64 +2,79 @@
 using System.IO;
 using Realms;
 using MigrationTutorial.Migrations;
+using MigrationTutorial.Utils;
+using Realms.Schema;
 
 namespace MigrationTutorial.Services
 {
     public class RealmService
     {
-        private static RealmConfiguration conf = new RealmConfiguration(GetPath())
+        private static ulong _schemaVersion = 0;
+
+        private static RealmConfiguration _conf;
+
+        public static Realm GetRealm() => Realm.GetInstance(_conf);
+
+        public static void Init(ulong schemaVersion, bool isRealmToDelete)
         {
-            SchemaVersion = 1,
-
-            MigrationCallback = (migration, oldSchemaVersion) =>
+            if (_schemaVersion == 0)
             {
-                Console.WriteLine("We're in the migration method");
+                var realmPath = GetPath();
+                _schemaVersion = schemaVersion;
 
-                if (oldSchemaVersion > 1)
+                if (isRealmToDelete)
                 {
-                    V2Utils.DoMigrate(migration, oldSchemaVersion);
+                    try
+                    {
+                        File.Delete(realmPath);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.LogWarning($"It was not possible to delete the local realm at path {realmPath} because of an exception\n{e}");
+                    }
                 }
-                /*
-                 * TODO 3/11/2021
-                 * Make first migration for
-                 * 1- add department to employees
-                 * 2- link consumales to suppliers
-                */
 
+                RealmSchema schema = null;
+                if (_schemaVersion < 2)
+                {
+                    schema = new[] { typeof(Models.V1.Consumable), typeof(Models.V1.Employee) };
+                }
+                else if (_schemaVersion < 3)
+                {
+                    schema = new[] { typeof(Models.V2.Consumable), typeof(Models.V2.Employee), typeof(Models.V2.Customer), typeof(Models.V2.Department), typeof(Models.V2.Supplier) };
+                }
+                else if (_schemaVersion < 4)
+                {
+                    schema = new[] { typeof(Models.V3.Consumable), typeof(Models.V3.Employee), typeof(Models.V3.Customer), typeof(Models.V3.Department), typeof(Models.V3.Supplier), typeof(Models.V3.MachinaryAndTool) };
+                }
 
+                _conf = new RealmConfiguration(realmPath)
+                {
+                    // version 0 is the original schema version
+                    SchemaVersion = _schemaVersion,
 
-                    //var oldPeople = migration.OldRealm.DynamicApi.All("Person");
-                    //var newPeople = migration.NewRealm.All<Person>();
+                    Schema = schema,
 
-                    //// Migrate Person objects
-                    //for (var i = 0; i < newPeople.Count(); i++)
-                    //{
-                    //    var oldPerson = oldPeople.ElementAt(i);
-                    //    var newPerson = newPeople.ElementAt(i);
+                    MigrationCallback = (migration, oldSchemaVersion) =>
+                    {
+                        Console.WriteLine("We're in the migration method");
 
-                    //    // Changes from version 1 to 2 (adding LastName) will occur automatically when Realm detects the change
-                    //    // Migrate Person from version 2 to 3: replace FirstName and LastName with FullName
-                    //    // LastName doesn't exist in version 1
-                    //    if (oldSchemaVersion < 2)
-                    //    {
-                    //        newPerson.FullName = oldPerson.FirstName;
-                    //    }
-                    //    else if (oldSchemaVersion < 3)
-                    //    {
-                    //        newPerson.FullName = $"{oldPerson.FirstName} {oldPerson.LastName}";
-                    //    }
-
-                    //    // Migrate Person from version 3 to 4: replace Age with Birthday
-                    //    if (oldSchemaVersion < 4)
-                    //    {
-                    //        var birthYear = DateTimeOffset.UtcNow.Year - oldPerson.Age;
-                    //        newPerson.Birthday = new DateTimeOffset(birthYear, 1, 1, 0, 0, 0, TimeSpan.Zero);
-                    //    }
-                    //}
+                        if (oldSchemaVersion < 2)
+                        {
+                            V2Utils.DoMigrate(migration);
+                        }
+                        else if (oldSchemaVersion < 3)
+                        {
+                            V3Utils.DoMigrate(migration);
+                        }
+                    }
+                };
             }
-        };
-
-        public static Realm GetRealm() => Realm.GetInstance(conf);
+            else
+            {
+                Logger.LogWarning($"You can't set the schema version more than once! It's currently set to {_schemaVersion}.");
+            }
+        }
 
         private static string GetPath()
         {
@@ -75,7 +90,7 @@ namespace MigrationTutorial.Services
             }
             catch (Exception e)
             {
-                Utils.Logger.LogDebug($"It was not possible to create the realm at the binary path. The default SDK path will be used, instead.\n{e}");
+                Logger.LogDebug($"It was not possible to create the realm at the binary path. The default SDK path will be used, instead.\n{e}");
                 return "";
             }
         }

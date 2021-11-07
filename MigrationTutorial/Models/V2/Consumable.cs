@@ -1,5 +1,4 @@
 ﻿using System;
-using MongoDB.Bson;
 using Realms;
 
 namespace MigrationTutorial.Models.V2
@@ -7,23 +6,16 @@ namespace MigrationTutorial.Models.V2
     public class Consumable : RealmObject
     {
         [PrimaryKey]
-        public ObjectId Id { get; private set; } = ObjectId.GenerateNewId();
+        public string ProductId { get; private set; }
 
         public ConsumableType Type
         {
-            get
-            {
-                return (ConsumableType)_Type;
-            }
-            set
-            {
-
-                _Type = (int)value;
-            }
+            get => Enum.Parse<ConsumableType>(_Type);
+            set => _Type = value.ToString();
         }
 
         [Required]
-        private int? _Type { get; set; }
+        private string? _Type { get; set; } = string.Empty;
 
         public int Quantity { get; set; } = 0;
 
@@ -36,9 +28,13 @@ namespace MigrationTutorial.Models.V2
 
         public string Brand { get; set; }
 
-        public Consumable() { }
-    }
+        private Consumable() { }
 
+        public Consumable(string productId = "")
+        {
+            ProductId = productId;
+        }
+    }
 
     public enum ConsumableType
     {

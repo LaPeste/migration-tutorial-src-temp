@@ -9,5 +9,15 @@ namespace MigrationTutorial.Utils
             Console.WriteLine($"Debug: {message}");
 #endif
         }
+
+        public static void LogWarning(string message)
+        {
+            Console.WriteLine($"Warning: {message}");
+        }
+
+        public static void LogError(string message)
+        {
+            Console.WriteLine($"Error: {message}");
+        }
     }
 }
