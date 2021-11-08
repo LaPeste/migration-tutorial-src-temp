@@ -15,17 +15,18 @@ namespace MigrationTutorial.Services
 
         public static Realm GetRealm() => Realm.GetInstance(_conf);
 
-        public static void Init(ulong schemaVersion, bool isRealmToDelete)
+        public static void Init(ulong schemaVersion)
         {
             if (_schemaVersion == 0)
             {
                 var realmPath = GetPath();
                 _schemaVersion = schemaVersion;
 
-                if (isRealmToDelete)
+                if (File.Exists(realmPath) && schemaVersion == 1)
                 {
                     try
                     {
+                        Logger.LogDebug($"Since the realm already exists and the supplied schema version is 1, it's assumed you want to start from scratch.\n Deleting {realmPath}");
                         File.Delete(realmPath);
                     }
                     catch (Exception e)

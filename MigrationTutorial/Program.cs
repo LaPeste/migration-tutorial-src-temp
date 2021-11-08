@@ -16,27 +16,20 @@ namespace MigrationTutorial
 #region Parameter parsing
                 var cmdParams = new Dictionary<string, string>();
                 ulong schemaVersion = 0;
-                if (args.Length > 1)
+                if (args.Length < 2)
                 {
-                    var schemaVersionIndex = Array.FindIndex(args, x => x == "--schema_version");
-                    if (schemaVersionIndex != -1)
-                    {
-                        cmdParams.Add("schema_version", args[schemaVersionIndex+1]);
-                    }
-                    else
-                    {
-                        Logger.LogError($"Param schema_version not found");
-                        return 1;
-                    }
-                    var strSchemaVersion = Array.Find(args, x => x == "--delete_realm");
-                    if (strSchemaVersion != null)
-                    {
-                        cmdParams.Add("delete_realm", "true");
-                    }
-                    else
-                    {
-                        cmdParams.Add("delete_realm", "false");
-                    }
+                    Logger.LogError($"No enough parameters where passed.\n{Logger.GetHelpString()}");
+                }
+
+                var schemaVersionIndex = Array.FindIndex(args, x => x == "--schema_version");
+                if (schemaVersionIndex != -1)
+                {
+                    cmdParams.Add("schema_version", args[schemaVersionIndex+1]);
+                }
+                else
+                {
+                    Logger.LogError($"Param schema_version not found");
+                    return 1;
                 }
 #endregion
 
@@ -46,8 +39,7 @@ namespace MigrationTutorial
                     Logger.LogError($"Schema version {args[1]} is out of range. Only 1, 2 and 3 are currently supported.");
                     return 1;
                 }
-                var deleteRealm = bool.Parse(cmdParams["delete_realm"]);
-                RealmService.Init(schemaVersion, deleteRealm);
+                RealmService.Init(schemaVersion);
                 SeedData.Seed();
                 return 0;
             }

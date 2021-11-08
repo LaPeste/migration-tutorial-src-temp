@@ -19,5 +19,16 @@ namespace MigrationTutorial.Utils
         {
             Console.WriteLine($"Error: {message}");
         }
+
+        public static string GetHelpString()
+        {
+            return @"
+MigrationTutorial --schema_version [1-3]
+
+--schema_version : specify the version schema from 1 to 3
+
+Note that:
+1) Schema versions need to be passed in order from 1 to 3. Any other order won't work.";
+        }
     }
 }
