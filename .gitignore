@@ -408,3 +408,4 @@ ASALocalRun/
 # Solution specific
 *.realm*
 RealmDB
+FodyWeavers.xsd

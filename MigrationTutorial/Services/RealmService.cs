@@ -11,9 +11,9 @@ namespace MigrationTutorial.Services
     {
         private static ulong _schemaVersion = 0;
 
-        private static RealmConfiguration _conf;
+        private static RealmConfiguration _realmConfiguration;
 
-        public static Realm GetRealm() => Realm.GetInstance(_conf);
+        public static Realm GetRealm() => Realm.GetInstance(_realmConfiguration);
 
         public static void Init(ulong schemaVersion)
         {
@@ -46,10 +46,10 @@ namespace MigrationTutorial.Services
                 }
                 else if (_schemaVersion < 4)
                 {
-                    schema = new[] { typeof(Models.V3.Consumable), typeof(Models.V3.Employee), typeof(Models.V3.Customer), typeof(Models.V3.Department), typeof(Models.V3.Supplier), typeof(Models.V3.MachinaryAndTool) };
+                    schema = new[] { typeof(Models.V3.Consumable), typeof(Models.V3.Employee), typeof(Models.V3.Customer), typeof(Models.V3.Department), typeof(Models.V3.Supplier), typeof(Models.V3.MachineryAndTool) };
                 }
 
-                _conf = new RealmConfiguration(realmPath)
+                _realmConfiguration = new RealmConfiguration(realmPath)
                 {
                     // version 0 is the original schema version
                     SchemaVersion = _schemaVersion,

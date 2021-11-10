@@ -4,7 +4,7 @@ using Realms;
 
 namespace MigrationTutorial.Models.V3
 {
-    public class MachinaryAndTool : RealmObject
+    public class MachineryAndTool : RealmObject
     {
         [PrimaryKey]
         public ObjectId Id { get; private set; } = ObjectId.GenerateNewId();
@@ -33,7 +33,7 @@ namespace MigrationTutorial.Models.V3
 
         public Supplier Supplier { get; set; }
 
-        public MachinaryAndTool() { }
+        public MachineryAndTool() { }
     }
 
     public enum OperationalStatus

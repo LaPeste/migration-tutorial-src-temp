@@ -16,8 +16,8 @@ namespace MigrationTutorial.Migrations
         {
             var realm = RealmService.GetRealm();
 
-            // where 2 is just the 2 items that have moved from Consumable to MachinaryAndTool => brush and glue holder
-            if (realm.All<MachinaryAndTool>().Count() > 2)
+            // where 2 is just the 2 items that have moved from Consumable to MachineryAndTool => brush and glue holder
+            if (realm.All<MachineryAndTool>().Count() > 2)
             {
                 Logger.LogWarning("The database was already seeded with V3");
                 return;
@@ -33,23 +33,23 @@ namespace MigrationTutorial.Migrations
                     Head = headWorkshop
                 });
 
-                realm.Add(new MachinaryAndTool[]
+                realm.Add(new MachineryAndTool[]
                 {
-                    new MachinaryAndTool()
+                    new MachineryAndTool()
                     {
                         Type = Type.ManufacturingMachine,
                         Status = OperationalStatus.Functioning,
                         AssignedMaintaner = null,
                         ToolName = "Milling machine"
                     },
-                    new MachinaryAndTool()
+                    new MachineryAndTool()
                     {
                         Type = Type.ManufacturingMachine,
                         Status = OperationalStatus.Functioning,
                         AssignedMaintaner = null,
                         ToolName = "Press"
                     },
-                    new MachinaryAndTool()
+                    new MachineryAndTool()
                     {
                         Type = Type.PrototypingMachine,
                         Status = OperationalStatus.Functioning,
@@ -72,40 +72,40 @@ namespace MigrationTutorial.Migrations
 
             for (var i = 0; i < oldConsumables.Count(); i++)
             {
-                var currOldConsumable = oldConsumables.ElementAt(i);
-                if (currOldConsumable._Type == "GlueHolder")
+                var oldConsumable = oldConsumables.ElementAt(i);
+                if (oldConsumable._Type == "GlueHolder")
                 {
-                    var suppId = (ObjectId)currOldConsumable.Supplier.Id;
-                    var glueSupplier = migration.NewRealm.All<Supplier>().Filter("Id == $0", suppId).First();
+                    var supplierId = (ObjectId)oldConsumable.Supplier.Id;
+                    var glueSupplier = migration.NewRealm.All<Supplier>().Filter("Id == $0", supplierId).First();
 
-                    migration.NewRealm.Add(new MachinaryAndTool()
+                    migration.NewRealm.Add(new MachineryAndTool()
                     {
                         Type = Type.ManufacturingTool,
                         Status = OperationalStatus.Functioning,
                         AssignedMaintaner = null,
-                        ToolName = currOldConsumable._Type,
+                        ToolName = oldConsumable._Type,
                         Supplier = glueSupplier,
-                        Brand = currOldConsumable.Brand
+                        Brand = oldConsumable.Brand
                     });
 
-                    oldGlueHolderId = currOldConsumable.ProductId;
+                    oldGlueHolderId = oldConsumable.ProductId;
                 }
-                else if (currOldConsumable._Type == "Brush")
+                else if (oldConsumable._Type == "Brush")
                 {
-                    var suppId = (ObjectId)currOldConsumable.Supplier.Id;
-                    var brushSupplier = migration.NewRealm.All<Supplier>().Filter("Id == $0", suppId).First();
+                    var supplierId = (ObjectId)oldConsumable.Supplier.Id;
+                    var brushSupplier = migration.NewRealm.All<Supplier>().Filter("Id == $0", supplierId).First();
 
-                    migration.NewRealm.Add(new MachinaryAndTool()
+                    migration.NewRealm.Add(new MachineryAndTool()
                     {
                         Type = Type.ManufacturingTool,
                         Status = OperationalStatus.Functioning,
                         AssignedMaintaner = null,
-                        ToolName = currOldConsumable._Type,
+                        ToolName = oldConsumable._Type,
                         Supplier = brushSupplier,
-                        Brand = currOldConsumable.Brand
+                        Brand = oldConsumable.Brand
                     });
 
-                    oldBrushId = currOldConsumable.ProductId;
+                    oldBrushId = oldConsumable.ProductId;
                 }
             }
 

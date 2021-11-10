@@ -14,11 +14,8 @@ namespace MigrationTutorial.Models.V1
         public ConsumableType Type
         {
             get => Enum.Parse<ConsumableType>(_Type);
-            set=> _Type = value.ToString();
+            set => _Type = value.ToString();
         }
-
-        [Required]
-        private string? _Type { get; set; } = string.Empty;
 
         public int Quantity { get; set; } = 0;
 
@@ -27,12 +24,15 @@ namespace MigrationTutorial.Models.V1
 
         public float Price { get; set; }
 
-        private Consumable() { }
+        [Required]
+        private string? _Type { get; set; } = string.Empty;
 
         public Consumable(string productId = "")
         {
             ProductId = productId;
         }
+
+        private Consumable() { }
     }
 
 

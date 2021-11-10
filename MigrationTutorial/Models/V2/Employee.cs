@@ -10,7 +10,7 @@ namespace MigrationTutorial.Models.V2
         public ObjectId Id { get; private set; } = ObjectId.GenerateNewId();
 
         [Required]
-        public string Fullname { get; set; }
+        public string FullName { get; set; }
 
         [Required]
         public int? Age { get; set; }

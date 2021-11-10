@@ -21,8 +21,8 @@ namespace MigrationTutorial.Migrations
             }
 
             var employees = realm.All<Employee>();
-            var headDep1 = employees.Where(e => e.Fullname == "Mario Rossi").FirstOrDefault();
-            var headDep2 = employees.Where(e => e.Fullname == "Federica Bianchi").FirstOrDefault();
+            var headDep1 = employees.Where(e => e.FullName == "Mario Rossi").FirstOrDefault();
+            var headDep2 = employees.Where(e => e.FullName == "Federica Bianchi").FirstOrDefault();
 
             realm.Write(() =>
             {
@@ -131,9 +131,10 @@ namespace MigrationTutorial.Migrations
                 }
             }
 
+            consumableToDelete.ForEach(x => migration.NewRealm.Remove(x));
+
             for (var i = 0; i < newConsumables.Count(); i++)
             {
-                consumableToDelete.ForEach(x => migration.NewRealm.Remove(x));
                 newConsumables.ElementAt(i).LastPurchasedPrice = oldConsumables.ElementAt(i).Price;
             }
         }

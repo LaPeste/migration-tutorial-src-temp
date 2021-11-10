@@ -2,7 +2,7 @@
 This is just a temporary repo that holds the migration tutorial for Realm. This will be moved to the centralised repo for examples when one is defined.
 
 # General info
-This is a saple project to showcase how to execute migrations in Realm .NET
+This is a sample project to showcase how to execute migrations in Realm .NET.
 To run the application, run the command line binary like `./MigrationTutorial --schema_version [1-3]`.
 
 The application simulates a business that goes through 2 different migrations. So, `schema_version 1` just creates the database with some minimal models. `schema_version 2` and `schema_version 3` make some changes to the models, hence the application operates migrations to accomodate the changes.  
