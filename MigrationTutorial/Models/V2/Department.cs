@@ -12,7 +12,7 @@ namespace MigrationTutorial.Models.V2
         [Required]
         public string? Name { get; set; }
 
-        //[Required]
+        // TODO check how to [Required]
         public Employee Head { get; set; }
 
         [Backlink(nameof(Employee.Department))]

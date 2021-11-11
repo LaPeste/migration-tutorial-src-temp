@@ -22,19 +22,6 @@ namespace MigrationTutorial.Services
                 var realmPath = GetPath();
                 _schemaVersion = schemaVersion;
 
-                if (File.Exists(realmPath) && schemaVersion == 1)
-                {
-                    try
-                    {
-                        Logger.LogDebug($"Since the realm already exists and the supplied schema version is 1, it's assumed you want to start from scratch.\n Deleting {realmPath}");
-                        File.Delete(realmPath);
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.LogWarning($"It was not possible to delete the local realm at path {realmPath} because of an exception\n{e}");
-                    }
-                }
-
                 RealmSchema schema = null;
                 if (_schemaVersion < 2)
                 {
@@ -70,6 +57,19 @@ namespace MigrationTutorial.Services
                         }
                     }
                 };
+
+                if (File.Exists(realmPath) && schemaVersion == 1)
+                {
+                    try
+                    {
+                        Logger.LogDebug($"Since the realm already exists and the supplied schema version is 1, it's assumed that you want to start from scratch.\n Deleting {realmPath}");
+                        Realm.DeleteRealm(_realmConfiguration);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.LogWarning($"It was not possible to delete the local realm at path {_realmConfiguration.DatabasePath} because of an exception\n{e}");
+                    }
+                }
             }
             else
             {
@@ -79,20 +79,21 @@ namespace MigrationTutorial.Services
 
         private static string GetPath()
         {
+            var dbName = "migrationTutorial.realm";
             try
             {
                 var binPath = AppDomain.CurrentDomain.BaseDirectory;
                 var realmDir = Path.Combine(binPath, "RealmDB");
 
                 Directory.CreateDirectory(Path.Combine(binPath, realmDir));
-                var finalRealmPath = Path.Combine(binPath, realmDir, "migrationTutorial.realm");
-                using (File.Create(Path.Combine(realmDir, Path.GetRandomFileName()), 1, FileOptions.DeleteOnClose)) { };
+                var finalRealmPath = Path.Combine(binPath, realmDir, dbName);
+                using (File.Create(Path.Combine(realmDir, Path.GetRandomFileName()), 1, FileOptions.DeleteOnClose));
                 return finalRealmPath;
             }
             catch (Exception e)
             {
                 Logger.LogDebug($"It was not possible to create the realm at the binary path. The default SDK path will be used, instead.\n{e}");
-                return "";
+                return dbName;
             }
         }
     }

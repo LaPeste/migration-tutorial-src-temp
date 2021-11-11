@@ -108,17 +108,29 @@ namespace MigrationTutorial.Migrations
             {
                 var newEmployee = newEmployees.ElementAt(i);
                 var oldEmployee = oldEmployees.ElementAt(i);
-                newEmployee.Gender = string.Equals(oldEmployee.Gender, "female", StringComparison.OrdinalIgnoreCase) ?
-                    Gender.Female : Gender.Male;
+                if (string.Equals(oldEmployee.Gender, "female", StringComparison.OrdinalIgnoreCase))
+                {
+                    newEmployee.Gender = Gender.Female;
+                }
+                else if (string.Equals(oldEmployee.Gender, "male", StringComparison.OrdinalIgnoreCase))
+                {
+                    newEmployee.Gender = Gender.Male;
+                }
+                else
+                {
+                    newEmployee.Gender = Gender.NotSpecified;
+                }
             }
 
             var newConsumables = migration.NewRealm.All<Consumable>();
             var oldConsumables = migration.OldRealm.DynamicApi.All("Consumable");
             var distinctConsumableId = new HashSet<string>();
             var consumableToDelete = new List<Consumable>();
+
             for (var i = 0; i < newConsumables.Count(); i++)
             {
                 var currConsumable = newConsumables.ElementAt(i);
+                currConsumable.LastPurchasedPrice = oldConsumables.ElementAt(i).Price;
 
                 // remove duplicates since ProductId is the new PrimaryKey
                 if (distinctConsumableId.Contains(currConsumable.ProductId))
@@ -132,11 +144,6 @@ namespace MigrationTutorial.Migrations
             }
 
             consumableToDelete.ForEach(x => migration.NewRealm.Remove(x));
-
-            for (var i = 0; i < newConsumables.Count(); i++)
-            {
-                newConsumables.ElementAt(i).LastPurchasedPrice = oldConsumables.ElementAt(i).Price;
-            }
         }
     }
 }
