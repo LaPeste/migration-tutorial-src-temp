@@ -25,7 +25,7 @@ namespace MigrationTutorial.Models.V1
         public float Price { get; set; }
 
         [Required]
-        private string? _Type { get; set; } = string.Empty;
+        private string _Type { get; set; } = string.Empty;
 
         public Consumable(string productId = "")
         {
@@ -38,7 +38,7 @@ namespace MigrationTutorial.Models.V1
 
     public enum ConsumableType
     {
-        Glue = 1,
+        Glue,
         SandPaper,
         Brush,
         GlueHolder,

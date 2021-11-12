@@ -14,6 +14,7 @@ namespace MigrationTutorial
             {
 
 #region Parameter parsing
+                // TODO think if to remove this in case I leave only 1 param
                 var cmdParams = new Dictionary<string, string>();
                 ulong schemaVersion = 0;
                 if (args.Length < 2)

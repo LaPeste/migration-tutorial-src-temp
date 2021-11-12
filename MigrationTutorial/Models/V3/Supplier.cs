@@ -12,13 +12,10 @@ namespace MigrationTutorial.Models.V3
 
         public string Name { get; set; }
 
-        //[Required]
         private ISet<int> _SuppliedTypes { get; }
 
         [Ignored]
         public ISet<ConsumableType> SuppliedTypes { get; } = new HashSet<ConsumableType>();
-
-        public Supplier() { }
 
         public void AddConsumableType(ConsumableType[] consumables)
         {

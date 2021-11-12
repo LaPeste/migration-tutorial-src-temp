@@ -15,7 +15,7 @@ namespace MigrationTutorial.Models.V2
         }
 
         [Required]
-        private string? _Type { get; set; } = string.Empty;
+        private string _Type { get; set; } = string.Empty;
 
         public int Quantity { get; set; } = 0;
 
@@ -38,7 +38,7 @@ namespace MigrationTutorial.Models.V2
 
     public enum ConsumableType
     {
-        Glue = 1,
+        Glue,
         SandPaper,
         Brush,
         GlueHolder,

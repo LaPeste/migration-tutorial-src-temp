@@ -7,6 +7,7 @@ using Type = MigrationTutorial.Models.V3.Type;
 using MigrationTutorial.Utils;
 using MongoDB.Bson;
 using System.Dynamic;
+using Microsoft.CSharp.RuntimeBinder;
 
 namespace MigrationTutorial.Migrations
 {
@@ -75,8 +76,18 @@ namespace MigrationTutorial.Migrations
                 var oldConsumable = oldConsumables.ElementAt(i);
                 if (oldConsumable._Type == "GlueHolder")
                 {
-                    var supplierId = (ObjectId)oldConsumable.Supplier.Id;
-                    var glueSupplier = migration.NewRealm.All<Supplier>().Filter("Id == $0", supplierId).First();
+                    Supplier glueSupplier = null;
+
+                    // the field "Supplier.Id" will not exist if jumping from V1 to V3, skipping V2
+                    try
+                    {
+                        var supplierId = (ObjectId)oldConsumable.Supplier.Id;
+                        glueSupplier = migration.NewRealm.All<Supplier>().Filter("Id == $0", supplierId).FirstOrDefault();
+                    }
+                    catch (RuntimeBinderException)
+                    {
+                        Logger.LogDebug($"The property {nameof(Supplier.Id)} doesn't exist on the old realm. This should likely mean that a migration from schema V1 to schema V3 was performed, not passing through 2.\n A null supplier will be set for this object.");
+                    }
 
                     migration.NewRealm.Add(new MachineryAndTool()
                     {
@@ -92,8 +103,18 @@ namespace MigrationTutorial.Migrations
                 }
                 else if (oldConsumable._Type == "Brush")
                 {
-                    var supplierId = (ObjectId)oldConsumable.Supplier.Id;
-                    var brushSupplier = migration.NewRealm.All<Supplier>().Filter("Id == $0", supplierId).First();
+                    Supplier brushSupplier = null;
+
+                    // the field "Supplier.Id" will not exist if jumping from V1 to V3, skipping V2
+                    try
+                    {
+                        var supplierId = (ObjectId)oldConsumable.Supplier.Id;
+                        brushSupplier = migration.NewRealm.All<Supplier>().Filter("Id == $0", supplierId).FirstOrDefault();
+                    }
+                    catch (RuntimeBinderException)
+                    {
+                        Logger.LogDebug($"The property {nameof(Supplier.Id)} doesn't exist on the old realm. This should likely mean that a migration from schema V1 to schema V3 was performed, not passing through 2.\n A null supplier will be set for this object.");
+                    }
 
                     migration.NewRealm.Add(new MachineryAndTool()
                     {
@@ -110,10 +131,18 @@ namespace MigrationTutorial.Migrations
             }
 
             var newConsumables = migration.NewRealm.All<Consumable>();
-            var brushToRemove = newConsumables.Where(x => x.ProductId == oldBrushId).First();
-            var glueHolderToRemove = newConsumables.Where(x => x.ProductId == oldGlueHolderId).First();
-            migration.NewRealm.Remove(brushToRemove);
-            migration.NewRealm.Remove(glueHolderToRemove);
+
+            // the following Ids will be empty if jumping from V1 to V3, skipping V2
+            if (oldBrushId != string.Empty)
+            {
+                var brushToRemove = newConsumables.Where(x => x.ProductId == oldBrushId).First();
+                migration.NewRealm.Remove(brushToRemove);
+            }
+            if (oldBrushId != string.Empty)
+            {
+                var glueHolderToRemove = newConsumables.Where(x => x.ProductId == oldGlueHolderId).First();
+                migration.NewRealm.Remove(glueHolderToRemove);
+            }
         }
     }
 }

@@ -3,6 +3,11 @@ namespace MigrationTutorial.Utils
 {
     public static class Logger
     {
+        public static void LogInfo(string message)
+        {
+            Console.WriteLine($"Info: {message}");
+        }
+
         public static void LogDebug(string message)
         {
 #if DEBUG

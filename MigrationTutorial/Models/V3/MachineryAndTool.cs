@@ -32,13 +32,11 @@ namespace MigrationTutorial.Models.V3
         public string ToolName { get; set; }
 
         public Supplier Supplier { get; set; }
-
-        public MachineryAndTool() { }
     }
 
     public enum OperationalStatus
     {
-        Malfunctioning = 1,
+        Malfunctioning,
         Functioning,
         UnderReparation,
         IssueReported,
@@ -47,7 +45,7 @@ namespace MigrationTutorial.Models.V3
 
     public enum Type
     {
-        ManufacturingMachine = 1,
+        ManufacturingMachine,
         ManufacturingTool,
         PrototypingMachine,
         PrototypingTool

@@ -11,15 +11,15 @@ namespace MigrationTutorial.Services
         {
             var realm = RealmService.GetRealm();
 
-            if (realm.Config.SchemaVersion < 2)
+            if (realm.Config.SchemaVersion == 1)
             {
                 Migrations.V1Utils.SeedData();
             }
-            else if (realm.Config.SchemaVersion < 3)
+            else if (realm.Config.SchemaVersion == 2)
             {
                 Migrations.V2Utils.SeedData();
             }
-            else if (realm.Config.SchemaVersion < 4)
+            else if (realm.Config.SchemaVersion == 3)
             {
                 Migrations.V3Utils.SeedData();
             }

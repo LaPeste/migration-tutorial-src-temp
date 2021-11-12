@@ -16,7 +16,5 @@ namespace MigrationTutorial.Models.V1
         public int? Age { get; set; }
 
         public string Gender { get; set; }
-            
-        public Employee() { }
     }
 }

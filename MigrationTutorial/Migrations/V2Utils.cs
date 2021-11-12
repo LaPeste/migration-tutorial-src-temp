@@ -118,7 +118,7 @@ namespace MigrationTutorial.Migrations
                 }
                 else
                 {
-                    newEmployee.Gender = Gender.NotSpecified;
+                    newEmployee.Gender = Gender.Other;
                 }
             }
 
@@ -127,10 +127,10 @@ namespace MigrationTutorial.Migrations
             var distinctConsumableId = new HashSet<string>();
             var consumableToDelete = new List<Consumable>();
 
+            migration.RenameProperty(nameof(Consumable), "Price", nameof(Consumable.LastPurchasedPrice));
             for (var i = 0; i < newConsumables.Count(); i++)
             {
                 var currConsumable = newConsumables.ElementAt(i);
-                currConsumable.LastPurchasedPrice = oldConsumables.ElementAt(i).Price;
 
                 // remove duplicates since ProductId is the new PrimaryKey
                 if (distinctConsumableId.Contains(currConsumable.ProductId))

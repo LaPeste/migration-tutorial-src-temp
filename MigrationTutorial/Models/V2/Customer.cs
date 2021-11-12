@@ -10,10 +10,8 @@ namespace MigrationTutorial.Models.V2
         public ObjectId Id { get; private set; } = ObjectId.GenerateNewId();
 
         [Required]
-        public string? Name { get; set; }
+        public string Name { get; set; }
 
         public string Location { get; set; }
-
-        public Customer() { }
     }
 }

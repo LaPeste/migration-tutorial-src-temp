@@ -48,6 +48,7 @@ namespace MigrationTutorial.Migrations
                     }
                     });
 
+                // TODO try adding a duplicate and see what happens if you don't migrate properly
                 realm.Add(new Consumable[]
                 {
                     new Consumable()

@@ -24,14 +24,12 @@ namespace MigrationTutorial.Models.V2
         }
 
         private string _Gender { get; set; }
-
-        public Employee() { }
     }
 
     public enum Gender
     {
-        Male = 1,
+        Male,
         Female,
-        NotSpecified
+        Other
     }
 }
