@@ -1,7 +1,9 @@
-﻿using System;
+﻿#if SCHEMA_VERSION_2
+
+using System;
 using Realms;
 
-namespace MigrationTutorial.Models.V2
+namespace MigrationTutorial.Models
 {
     public class Consumable : RealmObject
     {
@@ -45,3 +47,5 @@ namespace MigrationTutorial.Models.V2
         MaterialSheet
     }
 }
+
+#endif

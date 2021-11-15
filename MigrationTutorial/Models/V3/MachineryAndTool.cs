@@ -1,8 +1,10 @@
-﻿using System;
+﻿#if SCHEMA_VERSION_3
+
+using System;
 using MongoDB.Bson;
 using Realms;
 
-namespace MigrationTutorial.Models.V3
+namespace MigrationTutorial.Models
 {
     public class MachineryAndTool : RealmObject
     {
@@ -51,3 +53,5 @@ namespace MigrationTutorial.Models.V3
         PrototypingTool
     }
 }
+
+#endif

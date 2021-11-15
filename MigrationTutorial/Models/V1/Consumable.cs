@@ -1,8 +1,10 @@
-﻿using System;
+﻿#if SCHEMA_VERSION_1
+
+using System;
 using MongoDB.Bson;
 using Realms;
 
-namespace MigrationTutorial.Models.V1
+namespace MigrationTutorial.Models
 {
     public class Consumable : RealmObject
     {
@@ -45,3 +47,5 @@ namespace MigrationTutorial.Models.V1
         MaterialSheet
     }
 }
+
+#endif

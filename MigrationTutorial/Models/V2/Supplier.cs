@@ -1,9 +1,11 @@
-﻿using System;
+﻿#if SCHEMA_VERSION_2
+
+using System;
 using System.Collections.Generic;
 using MongoDB.Bson;
 using Realms;
 
-namespace MigrationTutorial.Models.V2
+namespace MigrationTutorial.Models
 {
     public class Supplier : RealmObject
     {
@@ -48,3 +50,5 @@ namespace MigrationTutorial.Models.V2
         }
     }
 }
+
+#endif

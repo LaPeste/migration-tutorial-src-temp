@@ -1,8 +1,10 @@
-﻿using System;
+﻿#if SCHEMA_VERSION_2
+
+using System;
 using MongoDB.Bson;
 using Realms;
 
-namespace MigrationTutorial.Models.V2
+namespace MigrationTutorial.Models
 {
     public class Employee : RealmObject
     {
@@ -33,3 +35,5 @@ namespace MigrationTutorial.Models.V2
         Other
     }
 }
+
+#endif

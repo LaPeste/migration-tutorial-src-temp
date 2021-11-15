@@ -15,30 +15,22 @@ namespace MigrationTutorial.Services
 
         public static Realm GetRealm() => Realm.GetInstance(_realmConfiguration);
 
-        public static void Init(ulong schemaVersion)
+        public static void Init()
         {
             if (_schemaVersion == 0)
             {
-                _schemaVersion = schemaVersion;
+#if SCHEMA_VERSION_1
+                _schemaVersion = 1;
+#elif SCHEMA_VERSION_2
+                _schemaVersion = 2;
+#elif SCHEMA_VERSION_3
+                _schemaVersion = 3;
+#endif
 
                 RealmSchema schema = null;
 
-                if (_schemaVersion == 1)
-                {
-                    schema = new[] { typeof(Models.V1.Consumable), typeof(Models.V1.Employee) };
-                }
-                else if (_schemaVersion == 2)
-                {
-                    schema = new[] { typeof(Models.V2.Consumable), typeof(Models.V2.Employee), typeof(Models.V2.Customer), typeof(Models.V2.Department), typeof(Models.V2.Supplier) };
-                }
-                else if (_schemaVersion == 3)
-                {
-                    schema = new[] { typeof(Models.V3.Consumable), typeof(Models.V3.Employee), typeof(Models.V3.Customer), typeof(Models.V3.Department), typeof(Models.V3.Supplier), typeof(Models.V3.MachineryAndTool) };
-                }
-
                 _realmConfiguration = new RealmConfiguration("migrationTutorial.realm")
                 {
-                    // version 0 is the original schema version
                     SchemaVersion = _schemaVersion,
 
                     Schema = schema,
@@ -47,31 +39,24 @@ namespace MigrationTutorial.Services
                     {
                         Console.WriteLine("We're in the migration method");
 
+#if SCHEMA_VERSION_2 || SCHEMA_VERSION_3
                         if (oldSchemaVersion < 2)
                         {
                             V2Utils.DoMigrate(migration);
                         }
+#endif
 
-                        // TODO let it run, remove else to see if from 1 to 3 it's all fine
-                        // TODO additionally update the readme to tell that from 1 to 3, skipping 2 is fine
-
-                        /* In a real case scenario the following check would not exist. The problem is that by the time one writes a migration for a certain schema version, it's granted that the current schema already has all the fields.
-                         * Unfortunately, this is not the case here since the following branch is a piece of code that would only be written at a future point in time.
-                         * To say it in other words, `if (oldSchemaVersion < 3)` would never exist while the models have gone through only 1 migration, from 1 to 2.
-                         * One would add V3 migration only when the models have gone through a second set of modifications.
-                         */
-                        if (_schemaVersion > 2)
+#if SCHEMA_VERSION_3
+                        if (oldSchemaVersion < 3)
                         {
-                            if (oldSchemaVersion < 3)
-                            {
-                                V3Utils.DoMigrate(migration);
-                            }
+                            V3Utils.DoMigrate(migration);
                         }
+#endif
                     }
                 };
 
                 var realmPath = _realmConfiguration.DatabasePath;
-                if (File.Exists(realmPath) && schemaVersion == 1)
+                if (File.Exists(realmPath) && _schemaVersion == 1)
                 {
                     try
                     {

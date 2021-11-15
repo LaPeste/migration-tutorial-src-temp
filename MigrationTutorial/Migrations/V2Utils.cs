@@ -1,7 +1,9 @@
-﻿using System;
+﻿#if SCHEMA_VERSION_2 || SCHEMA_VERSION_3
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using MigrationTutorial.Models.V2;
+using MigrationTutorial.Models;
 using MigrationTutorial.Services;
 using MigrationTutorial.Utils;
 using Realms;
@@ -10,6 +12,8 @@ namespace MigrationTutorial.Migrations
 {
     public static class V2Utils
     {
+
+#if SCHEMA_VERSION_2
         public static void SeedData()
         {
             var realm = RealmService.GetRealm();
@@ -98,6 +102,7 @@ namespace MigrationTutorial.Migrations
                 }
             });
         }
+#endif
 
         public static void DoMigrate(Migration migration)
         {
@@ -128,6 +133,7 @@ namespace MigrationTutorial.Migrations
             var consumableToDelete = new List<Consumable>();
 
             migration.RenameProperty(nameof(Consumable), "Price", nameof(Consumable.LastPurchasedPrice));
+
             for (var i = 0; i < newConsumables.Count(); i++)
             {
                 var currConsumable = newConsumables.ElementAt(i);
@@ -147,4 +153,5 @@ namespace MigrationTutorial.Migrations
         }
     }
 }
- 
+
+#endif

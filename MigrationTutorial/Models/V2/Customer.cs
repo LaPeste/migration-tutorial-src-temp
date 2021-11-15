@@ -1,8 +1,10 @@
-﻿using System;
+﻿#if SCHEMA_VERSION_2
+
+using System;
 using MongoDB.Bson;
 using Realms;
 
-namespace MigrationTutorial.Models.V2
+namespace MigrationTutorial.Models
 {
     public class Customer : RealmObject
     {
@@ -15,3 +17,5 @@ namespace MigrationTutorial.Models.V2
         public string Location { get; set; }
     }
 }
+
+#endif

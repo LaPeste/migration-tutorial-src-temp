@@ -1,8 +1,10 @@
-﻿using System.Linq;
+﻿#if SCHEMA_VERSION_3
+
+using System.Linq;
 using MongoDB.Bson;
 using Realms;
 
-namespace MigrationTutorial.Models.V3
+namespace MigrationTutorial.Models
 {
     public class Department : RealmObject
     {
@@ -18,3 +20,5 @@ namespace MigrationTutorial.Models.V3
         public IQueryable<Employee> Employees { get; }
     }
 }
+
+#endif

@@ -1,8 +1,10 @@
-﻿using System;
+﻿#if SCHEMA_VERSION_1
+
+using System;
 using MongoDB.Bson;
 using Realms;
 
-namespace MigrationTutorial.Models.V1
+namespace MigrationTutorial.Models
 {
     public class Employee : RealmObject
     {
@@ -10,7 +12,7 @@ namespace MigrationTutorial.Models.V1
         public ObjectId Id { get; private set; } = ObjectId.GenerateNewId();
 
         [Required]
-        public string Fullname { get; set; }
+        public string FullName { get; set; }
 
         [Required]
         public int? Age { get; set; }
@@ -18,3 +20,5 @@ namespace MigrationTutorial.Models.V1
         public string Gender { get; set; }
     }
 }
+
+#endif

@@ -1,6 +1,8 @@
-﻿using System;
+﻿#if SCHEMA_VERSION_1
+
+using System;
 using System.Linq;
-using MigrationTutorial.Models.V1;
+using MigrationTutorial.Models;
 using MigrationTutorial.Services;
 using MigrationTutorial.Utils;
 
@@ -24,31 +26,30 @@ namespace MigrationTutorial.Migrations
                 realm.Add(new Employee[]{
                     new Employee()
                     {
-                        Fullname = "Mario Rossi",
+                        FullName = "Mario Rossi",
                         Age = 25,
                         Gender = "Male"
                     },
                     new Employee()
                     {
-                        Fullname = "Federica Bianchi",
+                        FullName = "Federica Bianchi",
                         Age = 23,
                         Gender = "Female"
                     },
                     new Employee()
                     {
-                        Fullname = "Luigi Verdi",
+                        FullName = "Luigi Verdi",
                         Age = 27,
                         Gender = "Male"
                     },
                     new Employee()
                     {
-                        Fullname = "Giovanni Viola",
+                        FullName = "Giovanni Viola",
                         Age = 29,
                         Gender = "Male"
                     }
                     });
 
-                // TODO try adding a duplicate and see what happens if you don't migrate properly
                 realm.Add(new Consumable[]
                 {
                     new Consumable()
@@ -74,6 +75,13 @@ namespace MigrationTutorial.Migrations
                     },
                     new Consumable()
                     {
+                        Type = ConsumableType.GlueHolder,
+                        UnitOfMeasure = "Pieces",
+                        Price = 9,
+                        ProductId = "385uyyt"
+                    },
+                    new Consumable()
+                    {
                         Type = ConsumableType.SandPaper,
                         UnitOfMeasure = "Strips",
                         Price = 120.5f,
@@ -91,3 +99,5 @@ namespace MigrationTutorial.Migrations
         }
     }
 }
+
+#endif
