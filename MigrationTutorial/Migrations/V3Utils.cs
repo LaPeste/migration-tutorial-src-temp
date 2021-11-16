@@ -28,11 +28,15 @@ namespace MigrationTutorial.Migrations
 
             realm.Write(() =>
             {
+                Logger.LogInfo("Seed data: add Workshop department");
+
                 realm.Add(new Department()
                 {
                     Name = "Workshop",
                     Head = headWorkshop
                 });
+
+                Logger.LogInfo("Seed data: add MachineryAndTools");
 
                 realm.Add(new MachineryAndTool[]
                 {
@@ -63,12 +67,16 @@ namespace MigrationTutorial.Migrations
 
         public static void DoMigrate(Migration migration)
         {
+            Logger.LogInfo("In migration: convert GlueHolder from a Consumable to a MachineryAndTool");
             ConvertConsumableToTool(migration, "GlueHolder");
+
+            Logger.LogInfo("In migration: convert Brush from a Consumable to a MachineryAndTool");
             ConvertConsumableToTool(migration, "Brush");
         }
 
         private static void ConvertConsumableToTool(Migration migration, string consumableType)
         {
+            // it's assumed that there's always 1 and 1 only type of Consumable
             var oldConsumable = ((IQueryable<RealmObject>)migration.OldRealm.DynamicApi.All("Consumable")).Filter("_Type == $0", consumableType).FirstOrDefault();
             if (oldConsumable == null)
             {

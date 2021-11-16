@@ -28,6 +28,8 @@ namespace MigrationTutorial.Migrations
             var headDep1 = employees.Where(e => e.FullName == "Mario Rossi").FirstOrDefault();
             var headDep2 = employees.Where(e => e.FullName == "Federica Bianchi").FirstOrDefault();
 
+            Logger.LogInfo("Seed data: add Suppliers to realm");
+
             realm.Write(() =>
             {
                 var suppliers = new List<Supplier>();
@@ -55,6 +57,8 @@ namespace MigrationTutorial.Migrations
 
                 realm.Add(suppliers);
 
+                Logger.LogInfo("Seed data: add Departments to realm");
+
                 realm.Add(new Department[]{
                     new Department()
                     {
@@ -67,6 +71,8 @@ namespace MigrationTutorial.Migrations
                         Head = headDep2
                     }
                 });
+
+                Logger.LogInfo("Seed data: add Customers to realm");
 
                 realm.Add(new Customer[]{
                     new Customer()
@@ -88,10 +94,14 @@ namespace MigrationTutorial.Migrations
 
             realm.Write(() =>
             {
+                Logger.LogInfo("Seed data: assign all Employees' Department to Manufacturing");
+
                 for (var i = 0; i < employees.Count(); i++)
                 {
                     employees.ElementAt(i).Department = manufactDep;
                 }
+
+                Logger.LogInfo("Seed data: match Consumables with the right Suppliers and store it");
 
                 for (var i = 0; i < consumables.Count(); i++)
                 {
@@ -106,6 +116,8 @@ namespace MigrationTutorial.Migrations
 
         public static void DoMigrate(Migration migration)
         {
+            Logger.LogInfo("In migration: converting Employee's gender from string to enum");
+
             var newEmployees = migration.NewRealm.All<Employee>();
             var oldEmployees = migration.OldRealm.DynamicApi.All("Employee");
 
@@ -132,7 +144,11 @@ namespace MigrationTutorial.Migrations
             var distinctConsumableId = new HashSet<string>();
             var consumableToDelete = new List<Consumable>();
 
+            Logger.LogInfo("In migration: rename Consumable.Price to Consumable.LastPurchasedPrice");
+
             migration.RenameProperty(nameof(Consumable), "Price", nameof(Consumable.LastPurchasedPrice));
+
+            Logger.LogInfo("In migration: remove duplicated Consumable to accomodate ProductId to become the new primary key");
 
             for (var i = 0; i < newConsumables.Count(); i++)
             {

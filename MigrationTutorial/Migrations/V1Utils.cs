@@ -21,6 +21,8 @@ namespace MigrationTutorial.Migrations
                 return;
             }
 
+            Logger.LogInfo("Seed data: add Employees to realm");
+
             realm.Write(() =>
             {
                 realm.Add(new Employee[]{
@@ -49,6 +51,8 @@ namespace MigrationTutorial.Migrations
                         Gender = "Male"
                     }
                     });
+
+                Logger.LogInfo("Seed data: Add Consumables to realm");
 
                 realm.Add(new Consumable[]
                 {

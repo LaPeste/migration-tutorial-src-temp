@@ -27,21 +27,20 @@ namespace MigrationTutorial.Services
                 _schemaVersion = 3;
 #endif
 
-                RealmSchema schema = null;
+                Logger.LogInfo($"Selected schema version: {_schemaVersion}");
 
                 _realmConfiguration = new RealmConfiguration("migrationTutorial.realm")
                 {
                     SchemaVersion = _schemaVersion,
 
-                    Schema = schema,
-
                     MigrationCallback = (migration, oldSchemaVersion) =>
                     {
-                        Console.WriteLine("We're in the migration method");
+                        Logger.LogInfo("A migration has started");
 
 #if SCHEMA_VERSION_2 || SCHEMA_VERSION_3
                         if (oldSchemaVersion < 2)
                         {
+                            Logger.LogInfo("The migration V2 is about to take place");
                             V2Utils.DoMigrate(migration);
                         }
 #endif
@@ -49,6 +48,7 @@ namespace MigrationTutorial.Services
 #if SCHEMA_VERSION_3
                         if (oldSchemaVersion < 3)
                         {
+                            Logger.LogInfo("The migration V3 is about to take place");
                             V3Utils.DoMigrate(migration);
                         }
 #endif
@@ -60,9 +60,9 @@ namespace MigrationTutorial.Services
                 {
                     try
                     {
-                        Logger.LogDebug($"Since the realm already exists and the supplied schema version is 1, it's assumed that you want to start from scratch.\n Deleting {realmPath}");
+                        Logger.LogDebug($"Since the realm already exists and the supplied schema version is 1, it's assumed that you want to start from scratch.\n       Deleting {realmPath}");
                         Realm.DeleteRealm(_realmConfiguration);
-                        Logger.LogInfo($"Realm is going to be create at:\n{realmPath}");
+                        Logger.LogInfo($"Realm is going to be created at:\n       {realmPath}");
                     }
                     catch (Exception e)
                     {
@@ -71,7 +71,7 @@ namespace MigrationTutorial.Services
                 }
                 else
                 {
-                    Logger.LogInfo($"the Realm is located at:\n{realmPath}");
+                    Logger.LogInfo($"the Realm is located at:\n       {realmPath}");
                 }
             }
             else
