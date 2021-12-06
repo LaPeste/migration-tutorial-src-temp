@@ -18,9 +18,11 @@
     <None Remove="Models\V2\" />
     <None Remove="New Folder\" />
     <None Remove="Models\V3\" />
+    <None Remove="Newtonsoft.Json" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Realm" Version="10.6.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Models\" />

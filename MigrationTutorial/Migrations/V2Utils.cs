@@ -114,7 +114,7 @@ namespace MigrationTutorial.Migrations
         }
 #endif
 
-        public static void DoMigrate(Migration migration)
+        public static void DoMigrate(Migration migration, ulong oldSchemaVersion)
         {
             Logger.LogInfo("In migration: converting Employee's gender from string to enum");
 

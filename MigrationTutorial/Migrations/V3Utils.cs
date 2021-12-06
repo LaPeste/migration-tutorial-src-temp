@@ -65,19 +65,41 @@ namespace MigrationTutorial.Migrations
             });
         }
 
-        public static void DoMigrate(Migration migration)
+        public static void DoMigrate(Migration migration, ulong oldSchemaVersion)
         {
+            Realm newRealm = migration.NewRealm;
+            Realm oldRealm = migration.OldRealm;
+            var config = new RealmConfiguration("temp.realm")
+            {
+                SchemaVersion = oldSchemaVersion,
+                IsDynamic = true
+            };
+
+            if (oldSchemaVersion < 2)
+            {
+                Realm.DeleteRealm(config);
+                newRealm.WriteCopy(config);
+                oldRealm = Realm.GetInstance(config);
+            }
+
+
             Logger.LogInfo("In migration: convert GlueHolder from a Consumable to a MachineryAndTool");
-            ConvertConsumableToTool(migration, "GlueHolder");
+            ConvertConsumableToTool(newRealm, oldRealm, "GlueHolder");
 
             Logger.LogInfo("In migration: convert Brush from a Consumable to a MachineryAndTool");
-            ConvertConsumableToTool(migration, "Brush");
+            ConvertConsumableToTool(newRealm, oldRealm, "Brush");
+
+            if (oldSchemaVersion < 2)
+            {
+                oldRealm.Dispose();
+                Realm.DeleteRealm(config);
+            }
         }
 
-        private static void ConvertConsumableToTool(Migration migration, string consumableType)
+        private static void ConvertConsumableToTool(Realm newRealm, Realm oldRealm, string consumableType)
         {
             // it's assumed that there's always 1 and 1 only type of Consumable
-            var oldConsumable = ((IQueryable<RealmObject>)migration.OldRealm.DynamicApi.All("Consumable")).Filter("_Type == $0", consumableType).FirstOrDefault();
+            var oldConsumable = ((IQueryable<RealmObject>)oldRealm.DynamicApi.All("Consumable")).Filter("_Type == $0", consumableType).FirstOrDefault();
             if (oldConsumable == null)
             {
                 Logger.LogWarning($"No consumable was found with type {consumableType}. Nothing to convert.");
@@ -87,18 +109,16 @@ namespace MigrationTutorial.Migrations
             Supplier consumableSupplier = null;
             string consumableBrand = string.Empty;
 
-            try
+            var supplierId = oldConsumable.DynamicApi.Get<RealmObject>("Supplier")?.DynamicApi.Get<ObjectId>("Id");
+
+            // if supplier has not been set yet
+            if (supplierId != null)
             {
-                var supplierId = oldConsumable.DynamicApi.Get<RealmObject>("Supplier").DynamicApi.Get<ObjectId>("Id");
-                consumableSupplier = migration.NewRealm.All<Supplier>().Filter("Id == $0", supplierId).FirstOrDefault();
+                consumableSupplier = newRealm.All<Supplier>().Filter("Id == $0", supplierId).FirstOrDefault();
                 consumableBrand = oldConsumable.DynamicApi.Get<string>("Brand");
             }
-            catch (System.MissingMemberException)
-            {
-                Logger.LogDebug($"Some properties don't exist on the old realm. This could likely mean that a migration from schema V1 to schema V3 was performed, not passing through 2.\n The operation will continue leaving such fields at their default value.");
-            }
 
-            migration.NewRealm.Add(new MachineryAndTool()
+            newRealm.Add(new MachineryAndTool()
             {
                 Type = Type.ManufacturingTool,
                 Status = OperationalStatus.Functioning,
@@ -108,14 +128,14 @@ namespace MigrationTutorial.Migrations
                 Brand = consumableBrand
             });
 
-            var newConsumables = migration.NewRealm.All<Consumable>();
+            var newConsumables = newRealm.All<Consumable>();
 
             // ProductId could be empty because of human error
             var consumableProductId = oldConsumable.DynamicApi.Get<string>("ProductId");
             if (consumableProductId != string.Empty)
             {
                 var consumableToRemove = newConsumables.Where(x => x.ProductId == consumableProductId).First();
-                migration.NewRealm.Remove(consumableToRemove);
+                newRealm.Remove(consumableToRemove);
             }
         }
     }

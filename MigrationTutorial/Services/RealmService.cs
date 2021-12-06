@@ -41,7 +41,7 @@ namespace MigrationTutorial.Services
                         if (oldSchemaVersion < 2)
                         {
                             Logger.LogInfo("The migration V2 is about to take place");
-                            V2Utils.DoMigrate(migration);
+                            V2Utils.DoMigrate(migration, oldSchemaVersion);
                         }
 #endif
 
@@ -49,7 +49,7 @@ namespace MigrationTutorial.Services
                         if (oldSchemaVersion < 3)
                         {
                             Logger.LogInfo("The migration V3 is about to take place");
-                            V3Utils.DoMigrate(migration);
+                            V3Utils.DoMigrate(migration, oldSchemaVersion);
                         }
 #endif
                     }
