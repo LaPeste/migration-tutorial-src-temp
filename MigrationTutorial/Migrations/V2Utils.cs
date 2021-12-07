@@ -1,4 +1,4 @@
-﻿#if SCHEMA_VERSION_2 || SCHEMA_VERSION_3
+﻿#if SCHEMA_VERSION_2
 
 using System;
 using System.Collections.Generic;
@@ -12,8 +12,6 @@ namespace MigrationTutorial.Migrations
 {
     public static class V2Utils
     {
-
-#if SCHEMA_VERSION_2
         public static void SeedData()
         {
             var realm = RealmService.GetRealm();
@@ -25,9 +23,18 @@ namespace MigrationTutorial.Migrations
             }
 
             var employees = realm.All<Employee>();
-            var headDep1 = employees.Where(e => e.FullName == "Mario Rossi").FirstOrDefault();
-            var headDep2 = employees.Where(e => e.FullName == "Federica Bianchi").FirstOrDefault();
-
+            var headManufacturing = employees.Where(e => e.FullName == "Mario Rossi").FirstOrDefault();
+            var headPrototyping = employees.Where(e => e.FullName == "Federica Bianchi").FirstOrDefault();
+            var manufacturinDep = new Department()
+            {
+                Name = "Manufacturing",
+                Head = headManufacturing
+            };
+            var prototypingDep = new Department()
+            {
+                Name = "Prototyping",
+                Head = headPrototyping
+            };
             Logger.LogInfo("Seed data: add Suppliers to realm");
 
             realm.Write(() =>
@@ -59,18 +66,9 @@ namespace MigrationTutorial.Migrations
 
                 Logger.LogInfo("Seed data: add Departments to realm");
 
-                realm.Add(new Department[]{
-                    new Department()
-                    {
-                        Name = "Manufacturing",
-                        Head = headDep1
-                    },
-                    new Department()
-                    {
-                        Name = "Prototyping",
-                        Head = headDep2
-                    }
-                });
+                realm.Add(new Department[] { manufacturinDep, prototypingDep });
+                headPrototyping.Department = prototypingDep;
+                headManufacturing.Department = manufacturinDep;
 
                 Logger.LogInfo("Seed data: add Customers to realm");
 
@@ -88,8 +86,8 @@ namespace MigrationTutorial.Migrations
                 });
             });
 
-            var suppliers = realm.All<Supplier>();
             var manufactDep = realm.All<Department>().Where(d => d.Name == "Manufacturing").First();
+            var suppliers = realm.All<Supplier>();
             var consumables = realm.All<Consumable>();
 
             realm.Write(() =>
@@ -112,7 +110,6 @@ namespace MigrationTutorial.Migrations
                 }
             });
         }
-#endif
 
         public static void DoMigrate(Migration migration, ulong oldSchemaVersion)
         {

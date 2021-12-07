@@ -37,20 +37,12 @@ namespace MigrationTutorial.Services
                     {
                         Logger.LogInfo("A migration has started");
 
-#if SCHEMA_VERSION_2 || SCHEMA_VERSION_3
-                        if (oldSchemaVersion < 2)
-                        {
-                            Logger.LogInfo("The migration V2 is about to take place");
-                            V2Utils.DoMigrate(migration, oldSchemaVersion);
-                        }
-#endif
-
-#if SCHEMA_VERSION_3
-                        if (oldSchemaVersion < 3)
-                        {
-                            Logger.LogInfo("The migration V3 is about to take place");
-                            V3Utils.DoMigrate(migration, oldSchemaVersion);
-                        }
+#if SCHEMA_VERSION_2
+                        Logger.LogInfo("The migration V2 is about to take place");
+                        V2Utils.DoMigrate(migration, oldSchemaVersion);
+#elif SCHEMA_VERSION_3
+                        Logger.LogInfo("The migration V3 is about to take place");
+                        V3Utils.DoMigrate(migration, oldSchemaVersion);
 #endif
                     }
                 };

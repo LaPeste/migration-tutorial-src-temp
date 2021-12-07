@@ -7,7 +7,8 @@ using Realms;
 using Type = MigrationTutorial.Models.Type;
 using MigrationTutorial.Utils;
 using MongoDB.Bson;
-using Microsoft.CSharp.RuntimeBinder;
+using System;
+using System.Collections.Generic;
 
 namespace MigrationTutorial.Migrations
 {
@@ -25,16 +26,18 @@ namespace MigrationTutorial.Migrations
             }
 
             var headWorkshop = realm.All<Employee>().Where(e => e.FullName == "Giovanni Viola").FirstOrDefault();
+            var workshopDep = new Department()
+            {
+                Name = "Workshop",
+                Head = headWorkshop
+            };
 
             realm.Write(() =>
             {
                 Logger.LogInfo("Seed data: add Workshop department");
 
-                realm.Add(new Department()
-                {
-                    Name = "Workshop",
-                    Head = headWorkshop
-                });
+                realm.Add(workshopDep);
+                headWorkshop.Department = workshopDep;
 
                 Logger.LogInfo("Seed data: add MachineryAndTools");
 
@@ -67,39 +70,71 @@ namespace MigrationTutorial.Migrations
 
         public static void DoMigrate(Migration migration, ulong oldSchemaVersion)
         {
-            Realm newRealm = migration.NewRealm;
-            Realm oldRealm = migration.OldRealm;
-            var config = new RealmConfiguration("temp.realm")
-            {
-                SchemaVersion = oldSchemaVersion,
-                IsDynamic = true
-            };
-
             if (oldSchemaVersion < 2)
             {
-                Realm.DeleteRealm(config);
-                newRealm.WriteCopy(config);
-                oldRealm = Realm.GetInstance(config);
-            }
+                Logger.LogInfo("In migration: converting Employee's gender from string to enum");
 
+                var newEmployees = migration.NewRealm.All<Employee>();
+                var oldEmployees = migration.OldRealm.DynamicApi.All("Employee");
+
+                for (var i = 0; i < newEmployees.Count(); i++)
+                {
+                    var newEmployee = newEmployees.ElementAt(i);
+                    var oldEmployee = oldEmployees.ElementAt(i);
+                    if (string.Equals(oldEmployee.Gender, "female", StringComparison.OrdinalIgnoreCase))
+                    {
+                        newEmployee.Gender = Gender.Female;
+                    }
+                    else if (string.Equals(oldEmployee.Gender, "male", StringComparison.OrdinalIgnoreCase))
+                    {
+                        newEmployee.Gender = Gender.Male;
+                    }
+                    else
+                    {
+                        newEmployee.Gender = Gender.Other;
+                    }
+                }
+
+                var newConsumables = migration.NewRealm.All<Consumable>();
+                var oldConsumables = migration.OldRealm.DynamicApi.All("Consumable");
+                var distinctConsumableId = new HashSet<string>();
+                var consumableToDelete = new List<Consumable>();
+
+                Logger.LogInfo("In migration: rename Consumable.Price to Consumable.LastPurchasedPrice");
+
+                migration.RenameProperty(nameof(Consumable), "Price", nameof(Consumable.LastPurchasedPrice));
+
+                Logger.LogInfo("In migration: remove duplicated Consumable to accomodate ProductId to become the new primary key");
+
+                for (var i = 0; i < newConsumables.Count(); i++)
+                {
+                    var currConsumable = newConsumables.ElementAt(i);
+
+                    // remove duplicates since ProductId is the new PrimaryKey
+                    if (distinctConsumableId.Contains(currConsumable.ProductId))
+                    {
+                        consumableToDelete.Add(currConsumable);
+                    }
+                    else
+                    {
+                        distinctConsumableId.Add(currConsumable.ProductId);
+                    }
+                }
+
+                consumableToDelete.ForEach(x => migration.NewRealm.Remove(x));
+            }
 
             Logger.LogInfo("In migration: convert GlueHolder from a Consumable to a MachineryAndTool");
-            ConvertConsumableToTool(newRealm, oldRealm, "GlueHolder");
+            ConvertConsumableToTool(migration, oldSchemaVersion, "GlueHolder");
 
             Logger.LogInfo("In migration: convert Brush from a Consumable to a MachineryAndTool");
-            ConvertConsumableToTool(newRealm, oldRealm, "Brush");
-
-            if (oldSchemaVersion < 2)
-            {
-                oldRealm.Dispose();
-                Realm.DeleteRealm(config);
-            }
+            ConvertConsumableToTool(migration, oldSchemaVersion, "Brush");
         }
 
-        private static void ConvertConsumableToTool(Realm newRealm, Realm oldRealm, string consumableType)
+        private static void ConvertConsumableToTool(Migration migration, ulong oldSchemaVersion, string consumableType)
         {
             // it's assumed that there's always 1 and 1 only type of Consumable
-            var oldConsumable = ((IQueryable<RealmObject>)oldRealm.DynamicApi.All("Consumable")).Filter("_Type == $0", consumableType).FirstOrDefault();
+            var oldConsumable = ((IQueryable<RealmObject>)migration.OldRealm.DynamicApi.All("Consumable")).Filter("_Type == $0", consumableType).FirstOrDefault();
             if (oldConsumable == null)
             {
                 Logger.LogWarning($"No consumable was found with type {consumableType}. Nothing to convert.");
@@ -109,16 +144,15 @@ namespace MigrationTutorial.Migrations
             Supplier consumableSupplier = null;
             string consumableBrand = string.Empty;
 
-            var supplierId = oldConsumable.DynamicApi.Get<RealmObject>("Supplier")?.DynamicApi.Get<ObjectId>("Id");
-
-            // if supplier has not been set yet
-            if (supplierId != null)
+            // no suppliers if coming from schemaVersion 1
+            if (oldSchemaVersion > 1)
             {
-                consumableSupplier = newRealm.All<Supplier>().Filter("Id == $0", supplierId).FirstOrDefault();
+                var supplierId = oldConsumable.DynamicApi.Get<RealmObject>("Supplier").DynamicApi.Get<ObjectId>("Id");
+                consumableSupplier = migration.NewRealm.All<Supplier>().Filter("Id == $0", supplierId).FirstOrDefault();
                 consumableBrand = oldConsumable.DynamicApi.Get<string>("Brand");
             }
 
-            newRealm.Add(new MachineryAndTool()
+            migration.NewRealm.Add(new MachineryAndTool()
             {
                 Type = Type.ManufacturingTool,
                 Status = OperationalStatus.Functioning,
@@ -128,14 +162,14 @@ namespace MigrationTutorial.Migrations
                 Brand = consumableBrand
             });
 
-            var newConsumables = newRealm.All<Consumable>();
+            var newConsumables = migration.NewRealm.All<Consumable>();
 
             // ProductId could be empty because of human error
             var consumableProductId = oldConsumable.DynamicApi.Get<string>("ProductId");
             if (consumableProductId != string.Empty)
             {
                 var consumableToRemove = newConsumables.Where(x => x.ProductId == consumableProductId).First();
-                newRealm.Remove(consumableToRemove);
+                migration.NewRealm.Remove(consumableToRemove);
             }
         }
     }
