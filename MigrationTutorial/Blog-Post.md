@@ -1,0 +1,185 @@
+﻿# Performing a real world schema migration in Realm
+## Introduction
+When dealing with databases, schema migration is a common operation that takes place during development. However, the shift toward an agile mindset has made schema migrations not an uncommon operation to be performed on production code. Since data loss in deployed applications is detrimental to a business to various degrees, today we take a look at how to perform real world schema migrations in Realm so that you can do your best when the time comes.
+
+In order for me to show you how to perform a schema migration, we first need to set the stage so to make the code closer to what any of you may actually have to deal with. Let us think about a small business involved in shoe manufacturing that want to keep track of its internal doing in a digital manner. Initially, the business does not need to keep track of many things, mostly supplies and the few employees who work for them. However, since the business is doing good, they manage to secure some funding for expansion. At this point, more information needs to be stored on the company's IT system to have more transparency with their investors.
+
+How realistic my little story is, is up for debate. However, it should be able to resemble a proper series of schema migrations on production code that any of you may have to deal with.
+
+### What is a schema migration?
+Very briefly, a database uses a schema to formally define how its models are structured. Those models, generally, represent rather closely the view of the world from the business' perspective. Because a business isn't static, models may change over time. These changes could be in the form of modifications, deletions, additions and merges on both fields of a model and models themselves.
+In order to execute a schema migration in Realm there are two things that need to be done:
+
+1. monotonically bump up the `RealmConfiguration.SchemaVersion`
+1. write a migration function and assign it to `RealmConfiguration.MigrationCall`
+
+If you are interested in obtaining more technical details about migrations in Realm, a good place to start is our [documentation page](https://docs.mongodb.com/realm/sdk/dotnet/examples/modify-an-object-schema).
+
+## Code Overview
+In order to help the reader browsing faster through the code (TODO put the link to the repo here) of this tutorial I will briefly go over the structure of the project.  
+When the application starts for the first time, from `Program.Main` Realm is initialised and then seeded. Initialisation, which is executed by `RealmService.Init`, mostly sets the right `RealmConfiguration.SchemaVersion`, and assigns the migration function to `RealmConfiguration.MigrationCall`. On top of these steps, the initialisation function takes also care of deleting the Realm when it realises that the user is starting over from a previous run.  
+All the models are defined in the `Models` folder and categorized under a subfolder named `V1` that holds the models of the schema version 1, a subfolder `V2` for the models of schema version 2 and so on. A similar approach is used for the migration and seeding functions that are defined under the `Migration` folder. Namely, `V1Utils` for the utilities needed for the schema version 1, `V2Utils` for those needed for the schema version 2 and so on.
+
+### Remarks (TODO maybe this should have another title, or be merged with the parent "Code Overview" or keep the title but be moved at the end? Advice please)
+This tutorial would not be complete if it did not show how a schema can be migrated over multiple versions in one go, for example, from version 1 directly to version 4. Think of a device that had installed version 1 of your client and never connected to the internet until the client is released with the fourth iteration of its schema.  
+However, showing this last bit created an issue for the tutorial: Realm finds multiple models with the same name, e.g. V1.Consumable, V2.Consumable etc
+This problem was addressed by using *preprocessor directives* to hide the "wrong" models and the references to them, like those from the migration functions. This is something that should generally never be required in a real world application.
+
+ **(THIS THE FOLLOWING PART NEEDS A BIT MORE ATTENTION)** Another interesting thing to notice is that the [`migration.OldRealm`](https://docs.mongodb.com/realm-sdks/dotnet/latest/reference/Realms.Migration.html#Realms_Migration_OldRealm) needs to be accessed through the dynamic API. The reason for this is that a schema modification has just happened but you still need a way to access the old information in order to migrate it to the new schema. Accessing the previous realm dynamically is the only way to bypass the checks against the schema.
+
+### Models and migrations
+As already mentioned, there are three rounds of modifications to the models. These changes either reflect refinements over the previous models or new business needs of the company. 
+The application starts with just two classes, `Consumable` and `Employee`. However, the developers realise that it is far easier to ensure the correctness of `Employee.Gender` if the field is backed by an enum instead of a string. Hence, a new migration function is created, `V2Utils.DoMigrate`, where the conversion is executed [(1)](#(1)-migrate-string-to-enum).
+
+</br>
+
+---
+#### *(1) Migrate string to enum*
+```cs
+var newEmployees = migration.NewRealm.All<Employee>();
+var oldEmployees = migration.OldRealm.DynamicApi.All("Employee");
+
+for (var i = 0; i < newEmployees.Count(); i++)
+{
+    var newEmployee = newEmployees.ElementAt(i);
+    var oldEmployee = oldEmployees.ElementAt(i);
+    if (string.Equals(oldEmployee.Gender, "female", StringComparison.OrdinalIgnoreCase))
+    {
+        newEmployee.Gender = Gender.Female;
+    }
+    else if (string.Equals(oldEmployee.Gender, "male", StringComparison.OrdinalIgnoreCase))
+    {
+        newEmployee.Gender = Gender.Male;
+    }
+    else
+    {
+        newEmployee.Gender = Gender.Other;
+    }
+}
+```
+
+---
+
+</br>
+ 
+On top of the aforementioned improvement, the company now wants to have a list of `Supplier`-s, whom selling price of the last transaction needs to be recorded in the sold item itself. This is going to be used as a reference for the next purchase. Such addition needs a better naming for `Consumable.Price` as it is not well indicative anymore, so `LastPurchasedPrice` is chosen as a replacement. We can see this change executed in code fragment [(2)](#(2)-migration-string-to-string).  
+At the same time another requirement comes in, `Consumable`-s now need to be addressed by their `ProductId` instead of some random `Id`. This will avoid in the future that an employee adds and/or finds multiple entries in the system for the same `Consumable`. From a technical stand point, all of this means that the new primary key (PK) of `Consumable` is not anymore `Id` but becomes `ProductId`. Theoretically, this change in itself requires no manual change to be executed in the migration function; it only needs the change in the `Consumable` class to update what is the new PK. However, since by definition a field that is a PK must not have duplicates, the developer team need to clean duplicates in the migration function. We can see the code for this in snippet [(3)](#(3)-deletion-of-duplicates). It is also important to note that in case the new PK has duplicates that are not removed before the `MigrationCallback` ends, when getting an instance of Realm (`Realm.GetInstance()`) the following exception is thrown:
+
+> `Error: Exception Realms.Exceptions.RealmDuplicatePrimaryKeyValueException: Primary key property 'class_Consumable.ProductId' has duplicate values after migration.`
+
+</br>
+
+---
+#### *(2) Migration string to string*
+```cs
+migration.RenameProperty(nameof(Consumable), "Price", nameof(Consumable.LastPurchasedPrice));
+```
+---
+
+</br>
+
+---
+#### *(3) Deletion of duplicates*
+```cs
+var newConsumables = migration.NewRealm.All<Consumable>();
+var oldConsumables = migration.OldRealm.DynamicApi.All("Consumable");
+var distinctConsumableId = new HashSet<string>();
+var consumableToDelete = new List<Consumable>();
+
+Logger.LogInfo("In migration: rename Consumable.Price to Consumable.LastPurchasedPrice");
+
+migration.RenameProperty(nameof(Consumable), "Price", nameof(Consumable.LastPurchasedPrice));
+
+Logger.LogInfo("In migration: remove duplicated Consumable to accommodate ProductId to become the new primary key");
+
+for (var i = 0; i < newConsumables.Count(); i++)
+{
+    var currConsumable = newConsumables.ElementAt(i);
+
+    // remove duplicates since ProductId is the new PrimaryKey
+    if (distinctConsumableId.Contains(currConsumable.ProductId))
+    {
+        consumableToDelete.Add(currConsumable);
+    }
+    else
+    {
+        distinctConsumableId.Add(currConsumable.ProductId);
+    }
+}
+
+consumableToDelete.ForEach(x => migration.NewRealm.Remove(x));
+```
+
+---
+
+</br>
+
+The second migration is now concluded, as at the time there were not any other requests.  
+
+After some time, given that the company keeps expanding, a new `Department` called `Workshop` is introduced. This `Department` is now in charge of maintaining `MachineryAndTool`-s. Because of this addition the company reclassifies two `Consumable`, `Brush` and `GlueHolder`, as `MachineryAndTool` since it is more environmentally friendly and economically advantageous to properly care for them. 
+This business need requires a new migration, `V3Utils.DoMigrate`. The code for it can be see in snippet [(4)](#(4)-migrate-a-class-to-another). In it we first obtain the old `Consumable` of the needed type, then extract all the fields that are relevant to `MachineryAndTool`, create a new instance of the latter class and fill it with the extracted data, where appropriate. When all of this is done, the new instance of `MachineryAndTool` is added to the new Realm while the previous instance of `Consumable` is removed from the Realm, given that its logical representation was moved to another class (`MachineryAndTool`).
+
+</br>
+
+---
+#### *(4) Migrate a class to another*
+```cs
+private static void ConvertConsumableToTool(Migration migration, ulong oldSchemaVersion, string consumableType)
+{
+    // it's assumed that there's always 1 and 1 only type of Consumable
+    var oldConsumable = ((IQueryable<RealmObject>)migration.OldRealm.DynamicApi.All("Consumable")).Filter("_Type == $0", consumableType).FirstOrDefault();
+    if (oldConsumable == null)
+    {
+        Logger.LogWarning($"No consumable was found with type {consumableType}. Nothing to convert.");
+        return;
+    }
+
+    Supplier consumableSupplier = null;
+    string consumableBrand = string.Empty;
+
+    // no suppliers if coming from schemaVersion 1
+    if (oldSchemaVersion > 1)
+    {
+        var supplierId = oldConsumable.DynamicApi.Get<RealmObject>("Supplier").DynamicApi.Get<ObjectId>("Id");
+        consumableSupplier = migration.NewRealm.All<Supplier>().Filter("Id == $0", supplierId).FirstOrDefault();
+        consumableBrand = oldConsumable.DynamicApi.Get<string>("Brand");
+    }
+
+    migration.NewRealm.Add(new MachineryAndTool()
+    {
+        Type = Type.ManufacturingTool,
+        Status = OperationalStatus.Functioning,
+        AssignedMaintainer = null,
+        ToolName = oldConsumable.DynamicApi.Get<string>("_Type").ToString(),
+        Supplier = consumableSupplier,
+        Brand = consumableBrand
+    });
+
+    var newConsumables = migration.NewRealm.All<Consumable>();
+
+    // ProductId could be empty because of human error
+    var consumableProductId = oldConsumable.DynamicApi.Get<string>("ProductId");
+    if (consumableProductId != string.Empty)
+    {
+        var consumableToRemove = newConsumables.Where(x => x.ProductId == consumableProductId).First();
+        migration.NewRealm.Remove(consumableToRemove);
+    }
+}
+```
+
+---
+
+</br>
+
+## Conclusion
+Schema migrations may sometimes be confusing to developers. This blog-post wanted to help shed more light on how to perform some common schema migrations in Realm. More specifically, the following conceptual changes have been shown:
+
+[1)](#(1)-migrate-string-to-enum) change the backing value of a model's property (from a string to an enum)  
+[2)](#(2)-migration-string-to-string) rename a property of a model  
+[3)](#(3)-deletion-of-duplicates) move the Primary Key (PKs) from a model's property to another and handle the deletion of duplicated PKs  
+[4)](#(4)-migrate-a-class-to-another) convert a model class into another
+
+We hope that this blog-post covers most of your doubts when it comes to migrations in Realm. However, we do plan to also show how to migrate `EmbeddedObjects`. That surely deserves a post of its own.
+
+
+(TODO all those links like (#(1)-migrate-string-to-enum) I have absolutely no way to test if they work as every flavour of markdown implements those in slightly different ways.)
