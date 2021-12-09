@@ -27,7 +27,7 @@ namespace MigrationTutorial.Models
             set => _Status = value.ToString();
         }
 
-        public Employee AssignedMaintaner { get; set; }
+        public Employee AssignedMaintainer { get; set; }
 
         public string Brand { get; set; }
 

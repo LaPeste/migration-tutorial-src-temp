@@ -47,21 +47,21 @@ namespace MigrationTutorial.Migrations
                     {
                         Type = Type.ManufacturingMachine,
                         Status = OperationalStatus.Functioning,
-                        AssignedMaintaner = null,
+                        AssignedMaintainer = null,
                         ToolName = "Milling machine"
                     },
                     new MachineryAndTool()
                     {
                         Type = Type.ManufacturingMachine,
                         Status = OperationalStatus.Functioning,
-                        AssignedMaintaner = null,
+                        AssignedMaintainer = null,
                         ToolName = "Press"
                     },
                     new MachineryAndTool()
                     {
                         Type = Type.PrototypingMachine,
                         Status = OperationalStatus.Functioning,
-                        AssignedMaintaner = null,
+                        AssignedMaintainer = null,
                         ToolName = "Grinder"
                     }
                 });
@@ -156,7 +156,7 @@ namespace MigrationTutorial.Migrations
             {
                 Type = Type.ManufacturingTool,
                 Status = OperationalStatus.Functioning,
-                AssignedMaintaner = null,
+                AssignedMaintainer = null,
                 ToolName = oldConsumable.DynamicApi.Get<string>("_Type").ToString(),
                 Supplier = consumableSupplier,
                 Brand = consumableBrand
