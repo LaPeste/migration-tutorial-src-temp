@@ -3,10 +3,10 @@ This is just a temporary repo that holds the migration tutorial for Realm. This 
 
 # General info
 This is a sample project to showcase how to execute migrations in an application using Realm .NET.
-The application simulates a business that goes through 2 different migrations. So, `schema_version 1` just creates the database with some minimal models. `schema_version 2` and `schema_version 3` make some changes to the models, hence the application operates migrations to accomodate the changes.
-The application should only be run with the schemas in the order 1 through 3, with the ability to skip 2. If given 1 again after any run, it is assumed that the user wants to start over so the realm file will be deleted.
+The application simulates a business that goes through 2 different migrations. So, `SCHEMA_VERSION_1` just creates the database with some minimal models. `SCHEMA_VERSION_2` and `SCHEMA_VERSION_3` make some changes to the models, hence the application operates migrations to accommodate the changes.
+The application should only be run with the schemas in the order 1 through 3, with the ability to skip 2. If given 1 again after any run, it is assumed that the user wants to start over, and so the realm file will be deleted.
 
-## Techincal info
+## Technical info
 To build the application, define one of the follow symbol for the compiler:
 * `SCHEMA_VERSION_1` or
 * `SCHEMA_VERSION_2` or
