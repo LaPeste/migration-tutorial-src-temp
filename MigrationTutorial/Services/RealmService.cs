@@ -3,7 +3,6 @@ using System.IO;
 using Realms;
 using MigrationTutorial.Migrations;
 using MigrationTutorial.Utils;
-using Realms.Schema;
 
 namespace MigrationTutorial.Services
 {

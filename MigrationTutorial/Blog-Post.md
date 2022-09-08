@@ -2,28 +2,153 @@
 ## Introduction
 When dealing with databases, schema migration is a common operation that takes place during development. However, the shift toward an agile mindset has made schema migrations not an uncommon operation to be performed on production code. Since data loss in deployed applications is detrimental to a business to various degrees, today we take a look at how to perform real world schema migrations in Realm so that you can do your best when the time comes.
 
-In order for me to show you how to perform a schema migration, we first need to set the stage so to make the code closer to what any of you may actually have to deal with. Let us think about a small business involved in shoe manufacturing that want to keep track of its internal doing in a digital manner. Initially, the business does not need to keep track of many things, mostly supplies and the few employees who work for them. However, since the business is doing good, they manage to secure some funding for expansion. At this point, more information needs to be stored on the company's IT system to have more transparency with their investors.
+In order for me to show you how to perform a schema migration, we first need to set the stage so to make the code closer to what any of you may actually have to deal with. Let us think about a small business involved in shoe manufacturing that want to keep track of the business in a digital manner. Initially, the business does not need to keep track of many things, mostly supplies and the few employees who work for them. However, since the business is doing good, they manage to secure some funding for expansion. At this point, more information needs to be stored on the company's IT system to have more transparency with their investors.
 
 How realistic my little story is, is up for debate. However, it should be able to resemble a proper series of schema migrations on production code that any of you may have to deal with.
 
+Before we start with the deep dive, you should know that the extracts of code that you are going to see in this blog-post can be found in our [example repo](https://link.to.the.repo). The project uses [preprocessor directives](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/preprocessor-directives) to drive the various migrations; more on this later. But suffice to say that in order to see the full flow of the schema migrations you must define the *symbol* `SCHEMA_VERSION_1`, then build the project and, finally, run the resulting **dll**. Then, define `SCHEMA_VERSION_2`, rebuild and rerun the compiled binary. And as the last migration step, define `SCHEMA_VERSION_3` and redo the, already mentiond, build and run. A more in-depth guide on how to run the project can be found in `MigrationTutorial/README.md`.
+
 ### What is a schema migration?
-Very briefly, a database uses a schema to formally define how its models are structured. Those models, generally, represent rather closely the view of the world from the business' perspective. Because a business isn't static, models may change over time. These changes could be in the form of modifications, deletions, additions and merges on both fields of a model and models themselves.
-In order to execute a schema migration in Realm there are two things that need to be done:
+When reading this blog-post, it is assumed that you know what a schema migration is. However, just to reiterate it very briefly, a database uses a schema to formally define how its models are structured. Those models, generally, represent rather closely the view of the world from the business' perspective. Because a business isn't static, models may change over time. These changes could be in the form of modifications, deletions, additions and merges on both fields of a model and models themselves. A schema migration is what allows to migrate the previous schema to the new one. If you are in need of a larger introduction on schema migrations, you could start by reading our [introductory documentation](https://www.mongodb.com/docs/realm/sdk/dotnet/fundamentals/schema-versions-and-migrations/).
+If you have never done a migration in Realm before, you can find info on the subject in [documentation page](https://www.mongodb.com/docs/realm/sdk/dotnet/examples/modify-an-object-schema/#migration-functions). However, the gist of it is that there are two things that you need to do when you want to execute a schema migration in Realm:
 
 1. monotonically bump up the `RealmConfiguration.SchemaVersion`
-1. write a migration function and assign it to `RealmConfiguration.MigrationCall`
+1. write a migration function and assign it to `RealmConfiguration.MigrationCallback`
+What is very interesting here is what to write in the `RealmConfiguration.MigrationCallback` function. This blog-post is going to go really deep on this part.
 
-If you are interested in obtaining more technical details about migrations in Realm, a good place to start is our [documentation page](https://docs.mongodb.com/realm/sdk/dotnet/examples/modify-an-object-schema).
 
 ## Code Overview
-In order to help the reader browsing faster through the code (TODO put the link to the repo here) of this tutorial I will briefly go over the structure of the project.  
-When the application starts for the first time, from `Program.Main` Realm is initialised and then seeded. Initialisation, which is executed by `RealmService.Init`, mostly sets the right `RealmConfiguration.SchemaVersion`, and assigns the migration function to `RealmConfiguration.MigrationCall`. On top of these steps, the initialisation function takes also care of deleting the Realm when it realises that the user is starting over from a previous run.  
+In order to help you browsing faster through the [code](https://link.to.the.repo) of this tutorial I will briefly go over the structure of the project.  
+When the application starts for the first time, from `Program.Main`[(1)](#(1)-main) the realm is initialised *1)* and then seeded[^1] *2)*.
+
+</br>
+
+---
+#### *(1) Main*
+```cs
+class Program
+{
+    static int Main()
+    {
+        try
+        {
+            RealmService.Init(); // 1)
+            SeedData.Seed(); // 2)
+            return 0;
+        }
+        catch (Exception e)
+        {
+            Logger.LogError($"Exception {e} was encountered.");
+            return 1;
+        }
+    }
+}
+```
+
+---
+
+</br>
+
+Initialisation[(2)](#(2)-initialisation-of-the-realm) is executed by `RealmService.Init`. This part of the process prepares the `RealmConfiguration` where we set the name of the database *3)*, the schema version *4)* and the migration callback *5)*. On top of these steps, the initialisation function takes also care of deleting the Realm when it realises that the user is starting over from a previous run *6)*.
+
+</br>
+
+---
+#### *(2) Initialisation of the realm*
+```cs
+public class RealmService
+{
+    private static ulong _schemaVersion = 0;
+
+    private static RealmConfiguration _realmConfiguration;
+
+    public static Realm GetRealm() => Realm.GetInstance(_realmConfiguration);
+
+    public static void Init()
+    {
+        if (_schemaVersion == 0)
+        {
+#if SCHEMA_VERSION_1
+            _schemaVersion = 1;
+#elif SCHEMA_VERSION_2
+            _schemaVersion = 2;
+#elif SCHEMA_VERSION_3
+            _schemaVersion = 3;
+#endif
+
+            Logger.LogInfo($"Selected schema version: {_schemaVersion}");
+
+            _realmConfiguration = new RealmConfiguration("migrationTutorial.realm") // 3)
+            {
+                SchemaVersion = _schemaVersion, // 4)
+
+                MigrationCallback = (migration, oldSchemaVersion) => // 5)
+                {
+                    Logger.LogInfo("A migration has started");
+
+#if SCHEMA_VERSION_2
+                    Logger.LogInfo("The migration V2 is about to take place");
+                    V2Utils.DoMigrate(migration, oldSchemaVersion);
+#elif SCHEMA_VERSION_3
+                    Logger.LogInfo("The migration V3 is about to take place");
+                    V3Utils.DoMigrate(migration, oldSchemaVersion);
+#endif
+                }
+            };
+
+            var realmPath = _realmConfiguration.DatabasePath;
+            if (File.Exists(realmPath) && _schemaVersion == 1) // 6)
+            {
+                try
+                {
+                    Logger.LogDebug($"Since the realm already exists and the supplied schema version is 1, it's assumed that you want to start from scratch.\n       Deleting {realmPath}");
+                    Realm.DeleteRealm(_realmConfiguration);
+                    Logger.LogInfo($"Realm is going to be created at:\n       {realmPath}");
+                }
+                catch (Exception e)
+                {
+                    Logger.LogWarning($"It was not possible to delete the local realm at path {realmPath} because of an exception\n{e}");
+                }
+            }
+            else
+            {
+                Logger.LogInfo($"the Realm is located at:\n       {realmPath}");
+            }
+        }
+        else
+        {
+            Logger.LogWarning($"You can't set the schema version more than once! It's currently set to {_schemaVersion}.");
+        }
+    }
+}
+```
+
+---
+
+</br>
+
 All the models are defined in the `Models` folder and categorized under a subfolder named `V1` that holds the models of the schema version 1, a subfolder `V2` for the models of schema version 2 and so on. A similar approach is used for the migration and seeding functions that are defined under the `Migration` folder. Namely, `V1Utils` for the utilities needed for the schema version 1, `V2Utils` for those needed for the schema version 2 and so on.
 
-### Remarks (TODO maybe this should have another title, or be merged with the parent "Code Overview" or keep the title but be moved at the end? Advice please)
-This tutorial would not be complete if it did not show how a schema can be migrated over multiple versions in one go, for example, from version 1 directly to version 4. Think of a device that had installed version 1 of your client and never connected to the internet until the client is released with the fourth iteration of its schema.  
+</br>
+
+img1) *Project Folder Hierarchy*
+
+![Project Folder Hierarchy](./BlogPostImages/ProjectFolderHierarchy.png "Project Folder Hierarchy")
+
+</br>
+
+[^1]: Seeding in this context refers to the action of populating a dabatase with some dummy data.
+
+## Multiple Schema Migrations
+This tutorial would not be complete if it did not show how a schema can be migrated over multiple versions in one go, for example, from version 1 directly to version 4. Think of a device that had installed version 1 of your client (and of your schema) and never got updated throughout the various releases until the fourth iteration of the schema. 
 However, showing this last bit created an issue for the tutorial: Realm finds multiple models with the same name, e.g. V1.Consumable, V2.Consumable etc
-This problem was addressed by using *preprocessor directives* to hide the "wrong" models and the references to them, like those from the migration functions. This is something that should generally never be required in a real world application.
+This problem was addressed by using [preprocessor directives](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/preprocessor-directives) to select the right models to be included in the compilation. This is something that should generally never be required in a real world application.
+
+// TODO: start from here and particularly
+// 1. pay attention to the numbering of the following pieces of code as they are out of sync with what was added before this. The last used ref was number 2, hence the next should start from number
+// 2. Continue adding a lot of code extracts to go along with each subject you're explaining about
+// 3. Add code for the various models
+// 4. show better what these preprocessor directives look like in my code
 
  **(THIS THE FOLLOWING PART NEEDS A BIT MORE ATTENTION)** Another interesting thing to notice is that the [`migration.OldRealm`](https://docs.mongodb.com/realm-sdks/dotnet/latest/reference/Realms.Migration.html#Realms_Migration_OldRealm) needs to be accessed through the dynamic API. The reason for this is that a schema modification has just happened but you still need a way to access the old information in order to migrate it to the new schema. Accessing the previous realm dynamically is the only way to bypass the checks against the schema.
 
