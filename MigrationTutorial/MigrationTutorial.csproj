@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DefineConstants>TRACE;SCHEMA_VERSION_3;DEBUG;NET;NET5_0;NETCOREAPP</DefineConstants>
+    <DefineConstants>TRACE;SCHEMA_VERSION_1;DEBUG;NET;NET5_0;NETCOREAPP</DefineConstants>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
