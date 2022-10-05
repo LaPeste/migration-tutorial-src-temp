@@ -95,16 +95,16 @@ namespace MigrationTutorial.Migrations
                     }
                 }
 
-                var newConsumables = migration.NewRealm.All<Consumable>();
-                var oldConsumables = migration.OldRealm.DynamicApi.All("Consumable");
-                var distinctConsumableId = new HashSet<string>();
-                var consumableToDelete = new List<Consumable>();
 
                 Logger.LogInfo("In migration: rename Consumable.Price to Consumable.LastPurchasedPrice");
 
                 migration.RenameProperty(nameof(Consumable), "Price", nameof(Consumable.LastPurchasedPrice));
 
                 Logger.LogInfo("In migration: remove duplicated Consumable to accomodate ProductId to become the new primary key");
+
+                var newConsumables = migration.NewRealm.All<Consumable>();
+                var distinctConsumableId = new HashSet<string>();
+                var consumableToDelete = new List<Consumable>();
 
                 for (var i = 0; i < newConsumables.Count(); i++)
                 {
@@ -157,7 +157,7 @@ namespace MigrationTutorial.Migrations
                 Type = Type.ManufacturingTool,
                 Status = OperationalStatus.Functioning,
                 AssignedMaintainer = null,
-                ToolName = oldConsumable.DynamicApi.Get<string>("_Type").ToString(),
+                ToolName = oldConsumable.DynamicApi.Get<string>("_Type"),
                 Supplier = consumableSupplier,
                 Brand = consumableBrand
             });

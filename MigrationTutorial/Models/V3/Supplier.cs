@@ -18,12 +18,11 @@ namespace MigrationTutorial.Models
         [Ignored]
         public ISet<ConsumableType> SuppliedTypes { get; } = new HashSet<ConsumableType>();
 
-        public void AddConsumableType(ConsumableType[] consumables)
+        public void AddConsumableTypes(ConsumableType[] consumables)
         {
             foreach (var consumable in consumables)
             {
-                _SuppliedTypes.Add((int)consumable);
-                SuppliedTypes.Add(consumable);
+                AddConsumableType(consumable);
             }
         }
 
@@ -33,12 +32,11 @@ namespace MigrationTutorial.Models
             SuppliedTypes.Add(consumable);
         }
 
-        public void RemoveConsumableType(ConsumableType[] consumables)
+        public void RemoveConsumableTypes(ConsumableType[] consumables)
         {
             foreach (var consumable in consumables)
             {
-                _SuppliedTypes.Remove((int)consumable);
-                SuppliedTypes.Remove(consumable);
+                RemoveConsumableType(consumable);
             }
         }
 

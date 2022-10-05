@@ -42,7 +42,7 @@ namespace MigrationTutorial.Migrations
                 var suppliers = new List<Supplier>();
 
                 var supplier = new Supplier() { Name = "RoseWood" };
-                supplier.AddConsumableType(new ConsumableType[]
+                supplier.AddConsumableTypes(new ConsumableType[]
                 {
                     ConsumableType.Brush,
                     ConsumableType.Glue,
@@ -51,7 +51,7 @@ namespace MigrationTutorial.Migrations
                 suppliers.Add(supplier);
 
                 supplier = new Supplier() { Name = "Catalina" };
-                supplier.AddConsumableType(new ConsumableType[]
+                supplier.AddConsumableTypes(new ConsumableType[]
                 {
                     ConsumableType.SandPaper,
                     ConsumableType.Brush
@@ -136,16 +136,16 @@ namespace MigrationTutorial.Migrations
                 }
             }
 
-            var newConsumables = migration.NewRealm.All<Consumable>();
-            var oldConsumables = migration.OldRealm.DynamicApi.All("Consumable");
-            var distinctConsumableId = new HashSet<string>();
-            var consumableToDelete = new List<Consumable>();
 
             Logger.LogInfo("In migration: rename Consumable.Price to Consumable.LastPurchasedPrice");
 
             migration.RenameProperty(nameof(Consumable), "Price", nameof(Consumable.LastPurchasedPrice));
 
             Logger.LogInfo("In migration: remove duplicated Consumable to accomodate ProductId to become the new primary key");
+
+            var newConsumables = migration.NewRealm.All<Consumable>();
+            var distinctConsumableId = new HashSet<string>();
+            var consumableToDelete = new List<Consumable>();
 
             for (var i = 0; i < newConsumables.Count(); i++)
             {

@@ -9,7 +9,7 @@ Before we start with the deep dive, you should know that the extracts of code th
 
 ### Schema migrations in Realm
 When reading this blog-post, it is assumed that you know what a schema migration is. However, just to reiterate it very briefly, a database uses a schema to formally define how its models are structured. Those models, generally, represent rather closely the view of the world from the business' perspective. Because a business isn't static, models may change over time. These changes could be in the form of modifications, deletions, additions and merges on both fields of a model and models themselves. A schema migration is what allows to migrate the previous schema to the new one.  
-When Realm starts, like any other database, it must make sure that the objects that it manages respect the schema that it is supplied with. If that is not the case, Realm gives you one chance to fix the objects, through its migration function; otherwise a `Realms.Exceptions.RealmMigrationNeededException` is raised.  
+When Realm is opened, like any other database, it must make sure that the schema of the objects that it manages is equal to the schema that it is supplied with. If that is not the case and `RealmConfiguration.SchemaVersion` has not been monotonically bumped up a `Realms.Exceptions.RealmMigrationNeededException` is raised. If `RealmConfiguration.SchemaVersion` has been incremented, then the migration function is called.  
 So two are the things that you need to do when you want to execute a schema migration in Realm:
 
 1. monotonically bump up the `RealmConfiguration.SchemaVersion`
@@ -19,9 +19,9 @@ So two are the things that you need to do when you want to execute a schema migr
    ```
    and assign it to `RealmConfiguration.MigrationCallback`.  
 
-What is very interesting here is what to write in the `RealmConfiguration.MigrationCallback` function. This blog-post is going to delve deep on this subject.
+Since mistakes made during migration, that is in `RealmConfiguration.MigrationCallback`, can result in data loss; it is very important to understand all the details surrounding the matter. Hence, this blog-post delves deep on how to write a `RealmConfiguration.MigrationCallback`.
 
-If you want to read more about the subject you could start by reading our [introduction](https://www.mongodb.com/docs/realm/sdk/dotnet/fundamentals/schema-versions -and-migrations/) and [documentation](https://www.mongodb.com/docs/realm/sdk/dotnet/examples/modify-an-object-schema/#migration-functions) on schemas and migrations.
+If you want to read more about the subject you could start by reading our [introduction](https://www.mongodb.com/docs/realm/sdk/dotnet/fundamentals/schema-versions-and-migrations/) and [documentation](https://www.mongodb.com/docs/realm/sdk/dotnet/examples/modify-an-object-schema/#migration-functions) on schemas and migrations.
 
 ## Code Overview
 In order to help you browsing faster through the [code](https://link.to.the.repo) of this tutorial I will briefly go over the structure of the project.
@@ -121,7 +121,7 @@ public class RealmService
 
 </br>
 
-I have leaved out the seeding code as that is not really interesting. It just adds data to the realm. Instead, we need to take a closer look at the models so that you can understand the steps of the migration functions that I show later on.
+I have left out the seeding code as that is not really interesting as it just adds data to the realm. Instead, we need to take a closer look at the models so that you can understand the steps of the migration functions that I show later on.
 
 [^fn1]: Seeding in this context refers to the action of populating a database with some dummy data.
 
@@ -159,7 +159,7 @@ public class ClassThatCollides
 
 </br>
 
-The same approach is used everywhere else there are class collisions in the logic of the application. An example can be seen in the migration callback *5)* assigned during initialisation[(2)](#2-initialisation-of-the-realm) where the function selects which migration function, `V2Utils.DoMigrate` *6)* or `V3Utils.DoMigrate` *7)*, to include in the compiled assembly based on what version of the migration needs to be executed.  
+The same approach is used in any instance where there are collisions in the logic of the application. An example can be seen in the migration callback *5)* assigned during initialisation[(2)](#2-initialisation-of-the-realm) where the function selects which migration function, `V2Utils.DoMigrate` *6)* or `V3Utils.DoMigrate` *7)*, to include in the compiled assembly based on what version of the migration needs to be executed.  
 Remember that a simple conditional branch would not work as the `preprocessor directive` completely excludes parts of code from the compilation, resulting in e.g. `ClassThatCollides` not existing in the compiled assembly if `SCHEMA_VERSION_X` was not defined when the compilation was launched.  
 Lastly, it is important to remember that it is not granted that clients of an application update in a timely manner. This means that the migration function must be able to migrate the schema over multiple versions at once. Later in the tutorial, you can see how a migration function can deal with this issue.
 
@@ -241,7 +241,7 @@ public class Employee : RealmObject
 ### V1 to V2
 
 #### V2 Models
-While the company's developers continue refining their internal tool they realise that it is far easier to ensure the correctness of `Employee.Gender` if the field is backed by an `enum` instead of a `string` *10)*. Additionally, the company wants `Consumable`s to be addressed by their `ProductId` instead of some random `Id` *11)*. This will avoid in the future that an employee adds and/or finds multiple entries in the system for the same `Consumable`.  
+While the company's developers continue refining their internal tool they realise that it is far easier to ensure the correctness of `Employee.Gender` if the field is backed by an `enum` instead of a `string` *10)*. Additionally, the company wants `Consumable`s to be identified by their `ProductId` instead of a randomly generated `Id` *11)*. This will avoid in the future that an employee adds and/or finds multiple entries in the system for the same `Consumable`.  
 Then, `Consumable`s need to have a `Supplier` *13)* and the last purchased price stored *12)*. The last known price is going to be used as a reference for the next purchase. Because of the latter change, `Consumable.Price` is not well indicative any more, so `LastPurchasedPrice` is chosen as a replacement *12)*.  
 More models are also added: `Department`[(8)](#8-model-v2department), `Customer`[(9)](#9-model-v2customer) and `Supplier`[(10)](#10-model-v2supplier).
 
@@ -373,12 +373,11 @@ public class Supplier : RealmObject
     [Ignored]
     public ISet<ConsumableType> SuppliedTypes { get; } = new HashSet<ConsumableType>();
 
-    public void AddConsumableType(ConsumableType[] consumables)
+    public void AddConsumableTypes(ConsumableType[] consumables)
     {
         foreach (var consumable in consumables)
         {
-            _SuppliedTypes.Add(consumable.ToString());
-            SuppliedTypes.Add(consumable);
+            AddConsumableType(consumable);
         }
     }
 
@@ -388,12 +387,11 @@ public class Supplier : RealmObject
         SuppliedTypes.Add(consumable);
     }
 
-    public void RemoveConsumableType(ConsumableType[] consumables)
+    public void RemoveConsumableTypes(ConsumableType[] consumables)
     {
         foreach (var consumable in consumables)
         {
-            _SuppliedTypes.Remove(consumable.ToString());
-            SuppliedTypes.Remove(consumable);
+            RemoveConsumableType(consumable);
         }
     }
 
@@ -408,7 +406,7 @@ public class Supplier : RealmObject
 </br>
 
 #### Migration function
-Trying to access objects whose schema is not matching any more the current one is not allowed by Realm. However, in a migration function we want to port the old data to new format, so we still need a way to access the old data. Here is when the [`Realm.DynamicApi`](https://www.mongodb.com/docs/realm-sdks/dotnet/latest/reference/Realms.Realm.html#Realms_Realm_DynamicApi) comes to the rescue *15)*; in fact this is the tool that allows us to bypass the checks for correctness that Realm normally applies. Lastly, when in a migration function the old realm, the one that needs data modification, is found in [`Migration.OldRealm`](https://docs.mongodb.com/realm-sdks/dotnet/latest/reference/Realms.Migration.html#Realms_Migration_OldRealm). With the theory out of the way, we can look at the migration function.  
+Trying to access objects whose schema is not matching any more the current one is not allowed by Realm. However, in a migration function we want to port the old data to new format, so we still need a way to access the old data. Here is when the [`Realm.DynamicApi`](https://www.mongodb.com/docs/realm-sdks/dotnet/latest/reference/Realms.Realm.html#Realms_Realm_DynamicApi) comes to the rescue *15)*; in fact this is the tool that allows us to bypass the checks for correctness that Realm normally applies. Lastly, when in a migration function [`Migration.OldRealm`](https://docs.mongodb.com/realm-sdks/dotnet/latest/reference/Realms.Migration.html#Realms_Migration_OldRealm) is where to find the old realm, the one that holds data modeled after the old schema; while [`Migration.NewRealm`](https://www.mongodb.com/docs/realm-sdks/dotnet/latest/reference/Realms.Migration.html#Realms_Migration_NewRealm) is where the migrated data needs to be written to. With the theory out of the way, we can look at the migration function.  
 When we got the new *15)* and the old employees *14)*, the latter through the `DynamicApi`, we can start iterating over them *16)* in order to fill the `Employee.Gender` with the appropriate `enum`. Additionally, we need to rename the `Price` property to `LastPurchasedPrice` *17)*.  
 Lastly, from a theoretical stand point changing which field is the primary key only requires an update in the schema. However, since by definition a PK must not have duplicates, we need to make sure that there are not duplicates in the newly selected field `Consumable.ProductId` *18)*. In case the new PK has duplicates that are not removed before the `MigrationCallback` ends, Realm throws `Realms.Exceptions.RealmDuplicatePrimaryKeyValueException`.  
 Note that a `Department` is also added to the `Employee` model *9)*. But since that schema addition does not need any special handling, there is nothing to do about it in the migration function. Of course, if the new field needed to be filled according to some logic, the migration function would be a good place to do it.
@@ -424,7 +422,7 @@ public static void DoMigrate(Migration migration, ulong oldSchemaVersion)
     var newEmployees = migration.NewRealm.All<Employee>(); // 14)
     var oldEmployees = migration.OldRealm.DynamicApi.All("Employee");   // 15)
 
-    // 16) change string to enum
+    // 16) change Gender property from string to enum
     for (var i = 0; i < newEmployees.Count(); i++)
     {
         var newEmployee = newEmployees.ElementAt(i);
@@ -443,15 +441,14 @@ public static void DoMigrate(Migration migration, ulong oldSchemaVersion)
         }
     }
 
-    var newConsumables = migration.NewRealm.All<Consumable>();
-    var oldConsumables = migration.OldRealm.DynamicApi.All("Consumable");
-    var distinctConsumableId = new HashSet<string>();
-    var consumableToDelete = new List<Consumable>();
-
     // 17) rename Consumable.Price to Consumable.LastPurchasedPrice
     migration.RenameProperty(nameof(Consumable), "Price", nameof(Consumable.LastPurchasedPrice));
 
     // 18) remove duplicated Consumable to accommodate ProductId to become the new primary key
+    var newConsumables = migration.NewRealm.All<Consumable>();
+    var distinctConsumableId = new HashSet<string>();
+    var consumableToDelete = new List<Consumable>();
+
     for (var i = 0; i < newConsumables.Count(); i++)
     {
         var currConsumable = newConsumables.ElementAt(i);
@@ -546,7 +543,8 @@ After that, we take care of reclassifying `GlueHolder` *22)* and `Brush` *23)*. 
 ```cs
 public static void DoMigrate(Migration migration, ulong oldSchemaVersion)
 {
-    if (oldSchemaVersion < 2)   // 21)
+    // 21) migration code from version 1
+    if (oldSchemaVersion < 2)
     {
         var newEmployees = migration.NewRealm.All<Employee>();
         var oldEmployees = migration.OldRealm.DynamicApi.All("Employee");
@@ -569,12 +567,11 @@ public static void DoMigrate(Migration migration, ulong oldSchemaVersion)
             }
         }
 
+        migration.RenameProperty(nameof(Consumable), "Price", nameof(Consumable.LastPurchasedPrice));
+
         var newConsumables = migration.NewRealm.All<Consumable>();
-        var oldConsumables = migration.OldRealm.DynamicApi.All("Consumable");
         var distinctConsumableId = new HashSet<string>();
         var consumableToDelete = new List<Consumable>();
-
-        migration.RenameProperty(nameof(Consumable), "Price", nameof(Consumable.LastPurchasedPrice));
 
         for (var i = 0; i < newConsumables.Count(); i++)
         {
@@ -625,20 +622,16 @@ private static void ConvertConsumableToTool(Migration migration, ulong oldSchema
         Type = Type.ManufacturingTool,
         Status = OperationalStatus.Functioning,
         AssignedMaintainer = null,
-        ToolName = oldConsumable.DynamicApi.Get<string>("_Type").ToString(),
+        ToolName = oldConsumable.DynamicApi.Get<string>("_Type"),
         Supplier = consumableSupplier,
         Brand = consumableBrand
     });
 
     var newConsumables = migration.NewRealm.All<Consumable>();
 
-    // ProductId could be empty because of human error
     var consumableProductId = oldConsumable.DynamicApi.Get<string>("ProductId");
-    if (consumableProductId != string.Empty)
-    {
-        var consumableToRemove = newConsumables.Where(x => x.ProductId == consumableProductId).First();
-        migration.NewRealm.Remove(consumableToRemove);  //27)
-    }
+    var consumableToRemove = newConsumables.Where(x => x.ProductId == consumableProductId).First();
+    migration.NewRealm.Remove(consumableToRemove);  //27)
 }
 ```
 
