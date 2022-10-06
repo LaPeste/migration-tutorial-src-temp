@@ -409,7 +409,12 @@ public class Supplier : RealmObject
 Trying to access objects whose schema is not matching any more the current one is not allowed by Realm. However, in a migration function we want to port the old data to new format, so we still need a way to access the old data. Here is when the [`Realm.DynamicApi`](https://www.mongodb.com/docs/realm-sdks/dotnet/latest/reference/Realms.Realm.html#Realms_Realm_DynamicApi) comes to the rescue *15)*; in fact this is the tool that allows us to bypass the checks for correctness that Realm normally applies. Lastly, when in a migration function [`Migration.OldRealm`](https://docs.mongodb.com/realm-sdks/dotnet/latest/reference/Realms.Migration.html#Realms_Migration_OldRealm) is where to find the old realm, the one that holds data modeled after the old schema; while [`Migration.NewRealm`](https://www.mongodb.com/docs/realm-sdks/dotnet/latest/reference/Realms.Migration.html#Realms_Migration_NewRealm) is where the migrated data needs to be written to. With the theory out of the way, we can look at the migration function.  
 When we got the new *15)* and the old employees *14)*, the latter through the `DynamicApi`, we can start iterating over them *16)* in order to fill the `Employee.Gender` with the appropriate `enum`. Additionally, we need to rename the `Price` property to `LastPurchasedPrice` *17)*.  
 Lastly, from a theoretical stand point changing which field is the primary key only requires an update in the schema. However, since by definition a PK must not have duplicates, we need to make sure that there are not duplicates in the newly selected field `Consumable.ProductId` *18)*. In case the new PK has duplicates that are not removed before the `MigrationCallback` ends, Realm throws `Realms.Exceptions.RealmDuplicatePrimaryKeyValueException`.  
-Note that a `Department` is also added to the `Employee` model *9)*. But since that schema addition does not need any special handling, there is nothing to do about it in the migration function. Of course, if the new field needed to be filled according to some logic, the migration function would be a good place to do it.
+Note that a `Department` is also added to the `Employee` model *9)*. But since that schema addition does not need any special handling, there is nothing to do about it in the migration function. Of course, if the new field needed to be filled according to some logic, the migration function would be a good place to do it.  
+
+To summarise, in this migration you just saw how to:
+1. change the backing value of a model's property (from a string to an enum) *16)*
+1. rename a property of a model *17)*
+1. move the Primary Key (PKs) from a model's property to another one and handle the deletion of duplicated PKs *18)*
 
 </br>
 
@@ -536,6 +541,10 @@ public enum ConsumableType
 A new detail emerges in this migration function: checking against `oldSchemaVersion` *21)*. This is necessary because a migration must be able to be executed also when done from version X to version X+2 or higher. In our case from version 1 straight to 3. The content of the `if` branch *21)* is exactly the content of the migration from V1 to V2.  
 After that, we take care of reclassifying `GlueHolder` *22)* and `Brush` *23)*. In order to do this we need to obtain the old `Consumable` of the needed type *24)*, extract all the fields that are relevant to `MachineryAndTool` *25)* and create a new instance of the latter class to be filled with the extracted data, where appropriate *26)*. When all of this is done, the new instance of `MachineryAndTool` is added to the new realm *26)* while the previous instance of `Consumable` is removed from the realm *27)*, given that its logical representation was moved to another class (`MachineryAndTool`).
 
+To summarise, in this migration you just saw how to:
+1. enable the migration code to support jumps between schema versions greater than 1 *21)*
+1. convert a model class into another *22)* *23)*
+
 </br>
 
 ---
@@ -643,9 +652,9 @@ private static void ConvertConsumableToTool(Migration migration, ulong oldSchema
 Schema migrations may sometimes be confusing. This blog-post wanted to help shedding more light on how to perform some common migrations in Realm. More specifically, it was shown how you could:
 
 1. change the backing value of a model's property (from a string to an enum) *16)*
-1. rename a property of a model *17)*
-1. move the Primary Key (PKs) from a model's property to another one and handle the deletion of duplicated PKs *18)*
-1. enable the migration code to support jumps between schema versions greater than 1 *21)*
-1. convert a model class into another *22)* *23)*
+2. rename a property of a model *17)*
+3. move the Primary Key (PKs) from a model's property to another one and handle the deletion of duplicated PKs *18)*
+4. enable the migration code to support jumps between schema versions greater than 1 *21)*
+5. convert a model class into another *22)* *23)*
 
 We hope that this blog-post covers most of your doubts when it comes to migrations in Realm. However, we do plan to also show how to migrate `EmbeddedObjects`. That surely deserves a post of its own.
